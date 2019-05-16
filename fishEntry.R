@@ -94,11 +94,11 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
       #others will match
     
       #generate date info and date strings for sample and fish IDs
-      dateSet=strftime(strptime(dateTimeSet,format="%Y-%m-%d %H:%M:%S"),format="%Y-%m-%d")
-      dateSample=strftime(strptime(dateTimeSample,format="%Y-%m-%d %H:%M:%S"),format="%Y-%m-%d")
+      dateSet=strftime(strptime(dateTimeSet,format="%m/%d/%Y %H:%M:%S"),format="%Y-%m-%d")
+      dateSample=strftime(strptime(dateTimeSample,format="%m/%d/%Y %H:%M:%S"),format="%Y-%m-%d")
 
-      dateSampleString=strftime(strptime(dateTimeSample,format="%Y-%m-%d %H:%M:%S"),format="%Y%m%d")
-      timeSampleString=strftime(strptime(dateTimeSample,format="%Y-%m-%d %H:%M:%S"),format="%H%M")
+      dateSampleString=strftime(strptime(dateTimeSample,format="%m/%d/%Y %H:%M:%S"),format="%Y%m%d")
+      timeSampleString=strftime(strptime(dateTimeSample,format="%m/%d/%Y %H:%M:%S"),format="%H%M")
     
       # generate FISH_INFO rows
       fishInfoNEW=data.frame(projectID=rep(projectID,nrow(curData)),
@@ -241,7 +241,7 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
       }
       
       #dateTimeSet must be the same or earlier than dateTimeSample?
-      if(strptime(dateTimeSample,format="%Y-%m-%d %H:%M:%S")<strptime(dateTimeSet,format="%Y-%m-%d %H:%M:%S")){
+      if(strptime(dateTimeSample,format="%m/%d/%Y %H:%M:%S")<strptime(dateTimeSet,format="%m/%d/%Y %H:%M:%S")){
         stop("Your dateTimeSample is < your dateTimeSet!")
       }
       

@@ -9,9 +9,9 @@
 source('fishEntry.R')
 
 # set variables
-dbdir=""
+dbdir="C:/Users/jones/Box Sync/NDstuff/ND_R/"
 db="MFEdb.db"
-funcdir=""
+funcdir="C:/Users/jones/Box Sync/NDstuff/ND_R/fishEntryTool/"
 
 #update
 updateFish(dbdir=dbdir,db=db,funcdir=funcdir)

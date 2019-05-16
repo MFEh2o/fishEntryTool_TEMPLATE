@@ -1,10 +1,10 @@
 projectID,5,,,,,,,
 lakeID,BA,,,,,,,
 siteName,wholeShore,,,,,,,
-dataTimeSet,2019-05-15 22:00,,,,,,,
-dateTimeSample,2019-05-15 20:00,,,,,,,
+dataTimeSet,5/15/2019 20:00,,,,,,,
+dateTimeSample,5/15/2019 22:00,,,,,,,
 crew,AR CD CTS,,,,,,,
-gear,EB,,,,,,,
+gear,BE,,,,,,,
 distanceShocked,2,,,,,,,
 effort,2,,,,,,,
 effortUnits,hr,,,,,,,
@@ -16,18 +16,18 @@ metadataID,1234,,,,,,,
 useSampleMarkRecap,yes,,,,,,,
 sampleGroup,FishscapesSurveyBLahBlah,,,,,,,
 fishNum,species,fishLength,fishWeight,tagApply,TagRecapture,mortality,removed,otolithSample
-1,LMB,120,250,1,0,0,0,0
+1,LMB,120,120,1,0,0,0,0
 2,LMB,250,250,1,0,0,0,0
-3,LMB,300,250,1,0,1,0,0
-4,LMB,212,250,1,0,0,0,0
-5,LMB,75,250,1,0,0,0,0
-6,YWP,90,250,0,1,0,0,0
-7,YWP,220,250,0,1,0,0,0
-8,LMB,450,250,1,0,0,0,0
-9,LMB,330,250,1,0,0,0,0
-10,WLY,440,250,0,0,0,1,1
-11,WLY,600,250,0,1,0,0,0
-12,LMB,120,250,0,0,0,1,1
+3,LMB,300,300,1,0,1,0,0
+4,LMB,212,212,1,0,0,0,0
+5,LMB,75,75,1,0,0,0,0
+6,YWP,90,90,0,1,0,0,0
+7,YWP,220,220,0,1,0,0,0
+8,LMB,450,450,1,0,0,0,0
+9,LMB,330,330,1,0,0,0,0
+10,WLY,440,440,0,0,0,1,1
+11,WLY,600,600,0,1,0,0,0
+12,LMB,120,120,0,0,0,1,1
 13,LMB,250,250,1,0,0,0,0
-14,LMB,300,250,1,0,0,0,0
-15,LMB,212,250,1,0,0,0,0
+14,LMB,300,300,1,0,0,0,0
+15,LMB,212,212,1,0,0,0,0
