@@ -62,7 +62,10 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
       dateTimeSet=paste(dateTimeSet,":00",sep="")
       dateTimeSample=strsplit(cur[5],",")[[1]][2]
       dateTimeSample=paste(dateTimeSample,":00",sep="")
-      crew=strsplit(cur[6],",")[[1]][2]
+      crew=gsub("[\"]", "", cur[6])
+      crew=strsplit(crew,",")[[1]]
+      crew=crew[-1];crew=crew[crew!=""]
+      crew=paste(crew, collapse = ",")
       gear=strsplit(cur[7],",")[[1]][2]
       distanceShocked=strsplit(cur[8],",")[[1]][2]
       effort=as.numeric(strsplit(cur[9],",")[[1]][2])
@@ -113,7 +116,7 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
                           jumperDescription=if("jumperDescription"%in%colnames(curData)) curData$jumperDescription else NA,
                           useTagMarkRecap=if("useTagMarkRecap"%in%colnames(curData)) curData$useTagMarkRecap else NA,
                           tagID=if("tagID"%in%colnames(curData)) curData$tagID else NA,
-                          oldTag=if("oldTag"%in%colnames(curData)) curData$oldATag else NA,
+                          oldTag=if("oldTag"%in%colnames(curData)) curData$oldTag else NA,
                           tagApply=if("tagApply"%in%colnames(curData)) curData$tagApply else NA,
                           tagRecapture=if("tagRecapture"%in%colnames(curData)) curData$tagRecapture else NA,
                           tagApplyType=if("tagApplyType"%in%colnames(curData)) curData$tagApplyType else NA,
@@ -131,14 +134,18 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
                           pectoralFinRemoved=if("pectoralFinRemoved"%in%colnames(curData)) curData$pectoralFinRemoved else NA,
                           gonadRemoved=if("gonadRemoved"%in%colnames(curData)) curData$gonadRemoved else NA,
                           leftEyeRemoved=if("leftEyeRemoved"%in%colnames(curData)) curData$leftEyeRemoved else NA,
+                          finClipCollected=if("finClipCollected"%in%colnames(curData)) curData$finClipCollected else NA,
                           photo=if("photo"%in%colnames(curData)) curData$photo else NA,
                           gonadWeight=if("gonadWeight"%in%colnames(curData)) curData$gonadWeight else NA,
                           rectalTemp=if("rectalTemp"%in%colnames(curData)) curData$rectalTemp else NA,
                           gonadSqueze=if("gonadSqueze"%in%colnames(curData)) curData$gonadSqueze else NA,
                           sexualStage_MaierScale=if("sexualStage_MaierScale"%in%colnames(curData)) curData$sexualStage_MaierScale else NA,
-                          gonadWeight=if("gonadWeight"%in%colnames(curData)) curData$gonadWeight else NA,
+                          gpsWaypoint=if("gpsWaypoint"%in%colnames(curData)) curData$gpsWaypoint else NA,
                           finClipBox=if("finClipBox"%in%colnames(curData)) curData$finClipBox else NA,
+                          spineSample=if("spineSample"%in%colnames(curData)) curData$spineSample else NA,
+                          scaleSample=if("scaleSample"%in%colnames(curData)) curData$scaleSample else NA,
                           comments=if("comments"%in%colnames(curData)) curData$comments else NA,
+                        
                           entryFile=toCompile[i],
                           stringsAsFactors=FALSE)
       
@@ -176,7 +183,7 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
                                 stringsAsFactors=FALSE)
 
       # check for otoliths pulled and generate a log of fish otoliths
-      if("otolithSampled"%in%colnames(curData) & any(curData$otolithSampled==1)){
+      if("otolithSample"%in%colnames(curData) & any(curData$otolithSample==1)){
         if("fishOtolithsLOG.csv"%in%list.files()){
           fishOtolithsLOG=read.csv("fishOtolithsLOG.csv",header=TRUE,stringsAsFactors=FALSE)
         }else{
@@ -190,7 +197,36 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
                                    otolithWeight=""
                                   )
       }  
-    
+      # check for spines pulled and generate a log of fish spines
+      if("spineSample"%in%colnames(curData) & any(curData$spineSample==1)){
+        if("fishspinesLOG.csv"%in%list.files()){
+          fishspinesLOG=read.csv("fishspinesLOG.csv",header=TRUE,stringsAsFactors=FALSE)
+        }else{
+          fishspinesLOG=data.frame()
+        }
+        
+        
+        fishspinesNEW=data.frame(fishID=paste(lakeID,siteName,dateSampleString,timeSampleString,gear,metadataID,curData$fishNum,sep="_")[curData$spineSample==1],
+                                   lengthAtCapture=curData$length[curData$spineSample==1],
+                                   weightAtCapture=curData$weight[curData$spineSample==1]
+        )
+      }      
+      
+      # check for scales pulled and generate a log of fish scales
+      if("scaleSample"%in%colnames(curData) & any(curData$scaleSample==1)){
+        if("fishscalesLOG.csv"%in%list.files()){
+          fishscalesLOG=read.csv("fishscalesLOG.csv",header=TRUE,stringsAsFactors=FALSE)
+        }else{
+          fishscalesLOG=data.frame()
+        }
+        
+        
+        fishscalesNEW=data.frame(fishID=paste(lakeID,siteName,dateSampleString,timeSampleString,gear,metadataID,curData$fishNum,sep="_")[curData$scaleSample==1],
+                                 lengthAtCapture=curData$length[curData$scaleSample==1],
+                                 weightAtCapture=curData$weight[curData$scaleSample==1]
+        )
+      }      
+      
       # check for diets taken and generate a log of diets
       if("dietSampled"%in%colnames(curData) & any(curData$dietSampled==1)){
         if("fishDietsLOG.csv"%in%list.files()){
@@ -199,7 +235,7 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
           fishDietsLOG=data.frame()
         }
       
-        fishDietsNEW=data.frame(fishID=paste(lakeID,siteName,dateSampleString,timeSampleString,gear,metadataID,curData$fishNum,sep="_")[curData$otolithSample==1],
+        fishDietsNEW=data.frame(fishID=paste(lakeID,siteName,dateSampleString,timeSampleString,gear,metadataID,curData$fishNum,sep="_")[curData$dietSample==1],
                                 lakeID=lakeID[curData$dietSampled==1],
                                 dateSample=dateSample[curData$dietSampled==1],
                                 species=species[curData$dietSampled==1]
@@ -342,7 +378,7 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
         }
       
         # check on weights (based on length-weight regression), if those data were collected
-        if(any(curNEW$fishWeight>0 | !is.na(curNEW$fishWeight))){
+        if(any(curNEW$fishWeight>0 & !is.na(curNEW$fishWeight))){
           curDB=curDB[!is.na(curDB$fishWeight),]
           curDB=curDB[curDB$fishWeight>0,]
           if(nrow(curDB)>15){
@@ -389,7 +425,10 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
       clipRecap=curNEW$clipRecapture[!is.na(curNEW$clipRecapture)]
       if(length(clipRecap)>0){
         if(any(!unique(clipRecap)%in%c(fishInfoDB$clipApply[grepl(lakeID,fishInfoDB$sampleID)],fishInfoIS$clipApply[grepl(lakeID,fishInfoIS$sampleID)]))){
-          stop("You have indicated a clipRecapture that has never been applied in the lake you sampled.")
+          
+          if(force_clip==FALSE){
+            stop("You have indicated a clipApply or clipRecapture that is not in the database or in-season database. If you are certain this is the correct clipApply or clipRecapture then use the argument force_clip.")
+          }
         }
       }
       
@@ -400,17 +439,18 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
         # most likely remove the previous tagApply -- but are we sure that today's is right and not the previous apply?
         # change data sheet too!?!?!?
       tagsApplied=curNEW$tagApply[!is.na(curNEW$tagApply)]
+      tagsApplied=curNEW$tagApply[curNEW$tagApply!=""]
       if(length(tagsApplied)>0){
         if(any(tagsApplied%in%c(fishInfoDB$tagApply,fishInfoIS$tagApply),na.rm=TRUE)){
           for(j in 1:length(tagsApplied)){
             if(tagsApplied[j]%in%fishInfoDB$tagApply){
               tagApplyStop=TRUE
-              temp=rbind(fishInfoDB[fishInfoDB$tagApply==tagsApplied[j],c(1:8,12:19,38:39)],curNEW[curNEW$tagApply==tagsApplied[j],c(1:8,12:19,38:39)])
+              temp=rbind(fishInfoDB[fishInfoDB$tagApply==tagsApplied[j],c(1:8,12:19,38:39)],curNEW[curNEW$tagApply==tagsApplied[j],c(1:8,12:19,38,41)])
               print(temp)
             }
             if(tagsApplied[i]%in%fishInfoIS$tagApply){
               tagApplyStop=TRUE
-              temp=rbind(fishInfoIS[fishInfoIS$tagApply==tagsApplied[j],c(1:8,12:19,38:39)],curNEW[curNEW$tagApply==tagsApplied[j],c(1:8,12:19,38:39)])
+              temp=rbind(fishInfoIS[fishInfoIS$tagApply==tagsApplied[j],c(1:8,12:19,38:39)],curNEW[curNEW$tagApply==tagsApplied[j],c(1:8,12:19,38,41)])
               print(temp)
             }
           }
@@ -422,6 +462,7 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
         # the absence of a previous apply might mean it was entered wrong
         # make this the tag apply -> change data sheet too!?!?!
       tagsRecapped=curNEW$tagRecapture[!is.na(curNEW$tagRecapture)]
+      tagsRecapped=curNEW$tagRecapture[curNEW$tagRecapture!=""]
       if(length(tagsRecapped)>0){
         if(any(!tagsRecapped%in%c(fishInfoDB$tagApply,fishInfoIS$tagApply))){
           print(tagsRecapped[!tagsRecapped%in%c(fishInfoDB$tagApply,fishInfoIS$tagApply)])
@@ -523,6 +564,9 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
       fishInfoIS=rbind(fishInfoIS,fishInfoNEW)
       if(exists("fishDietsNEW")){fishDietsLOG=rbind(fishDietsLOG,fishDietsNEW)}
       if(exists("fishOtolithsNEW")){fishOtolithsLOG=rbind(fishOtolithsLOG,fishOtolithsNEW)}
+      if(exists("fishspinesNEW")){fishspinesLOG=rbind(fishspinesLOG,fishspinesNEW)}
+      if(exists("fishscalesNEW")){fishscalesLOG=rbind(fishscalesLOG,fishscalesNEW)}
+      
     }
     
     # write updates to files
@@ -531,5 +575,8 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
     
     if(exists("fishDietsNEW")){write.csv(fishDietsLOG,"fishDietsLOG.csv",row.names=FALSE)}
     if(exists("fishOtolithsNEW")){write.csv(fishOtolithsLOG,"fishOtolithsLOG.csv",row.names=FALSE)}
+    if(exists("fishspinesNEW")){write.csv(fishspinesLOG,"fishspinesLOG.csv",row.names=FALSE)}
+    if(exists("fishscalesNEW")){write.csv(fishscalesLOG,"fishscalesLOG.csv",row.names=FALSE)}
+    
   }
 }

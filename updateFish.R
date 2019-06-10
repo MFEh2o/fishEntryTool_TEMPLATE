@@ -14,4 +14,4 @@ db="MFEdb.db"
 funcdir="C:/Users/jones/Box Sync/NDstuff/ND_R/fishEntryTool/"
 
 #update
-updateFish(dbdir=dbdir,db=db,funcdir=funcdir)
+updateFish(dbdir=dbdir,db=db,funcdir=funcdir, force_siteID = T, force_sampleGroup = T, force_effortUnits = T, force_metadataID = T, force_clip = T)
