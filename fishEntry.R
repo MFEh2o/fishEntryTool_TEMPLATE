@@ -71,6 +71,7 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
       effort=as.numeric(strsplit(cur[9],",")[[1]][2])
       effortUnits=strsplit(cur[10],",")[[1]][2]
       comments=strsplit(cur[11],",")[[1]][2]
+      comments=ifelse(comments=="",NA,comments)
       useCPUE=strsplit(cur[12],",")[[1]][2]
       dataRecorder=strsplit(cur[13],",")[[1]][2]
       dataEnteredBy=strsplit(cur[14],",")[[1]][2]
