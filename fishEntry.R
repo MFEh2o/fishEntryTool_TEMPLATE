@@ -44,7 +44,7 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
 
   # check which files have been compiled and which have not in the directory
   beenCompiled=unique(fishInfoIS$entryFile)
-  toCompile=list.files(pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}\\.csv")
+  toCompile=list.files(pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}\\.csv")
   toCompile=toCompile[!(toCompile%in%beenCompiled)]
   if(length(toCompile)==0){
     #no files that have not been compiled into the in-season database
