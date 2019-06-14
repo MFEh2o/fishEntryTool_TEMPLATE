@@ -21,4 +21,4 @@ db="MFEdb.db"
 funcdir="C:/Users/jones/Documents/Summer2019/Database/dbFunctions/"
 
 #update
-updateFish(dbdir=dbdir,db=db,funcdir=funcdir)
+updateFish(dbdir=dbdir,db=db,funcdir=funcdir, force_siteID = T, force_sampleGroup = T, force_clip = T, force_species = T)
