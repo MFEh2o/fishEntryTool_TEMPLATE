@@ -28,7 +28,7 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
   fishSamplesDB=dbTable("FISH_SAMPLES")
   fishInfoDB=dbTable("FISH_INFO")
   otu=dbTable("OTU")
-  fishNames=otu[otu$grouping=="fish",]
+  fishNames=otu[otu$abbreviation!="NA",]
 
   # load in-season database files
   if("fishInfoIS.csv"%in%list.files()){
@@ -364,24 +364,26 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
         curDB=curDB[curDB$fishLength>0,]
         curNEW=fishInfoNEW[fishInfoNEW$species==uniqSpec[j],]
         
-        # range check on lengths, if those data were collected
-        if(any(curNEW$fishLength>0 | !is.na(curNEW$fishLength))){
-          if(nrow(curDB)>15){
-            if(any(curNEW$fishLength<=0)){
-              stop(paste("You report negative fishLength in sample ",paste(lakeID,siteName,dateSampleString,timeSampleString,gear,metadataID,sep="_"),
-                        "; Check fish:",paste(curNEW$fishID[curNEW$fishLength<=0],collapse=", "),sep=""))
-            }
-            if(any(curNEW$fishLength>(mean(curDB$fishLength)+3*sd(curDB$fishLength)))){
-              if(force_fishLength==FALSE){
-                stop(paste("You report fish longer than 3 standard deviations above the mean ever observed by us for",uniqSpec[j],"in sample",paste(lakeID,siteName,dateSampleString,timeSampleString,gear,metadataID,sep="_"),"if you are certain you have fishLength correct for all individuals use the argument force_fishLength;",
-                           "Check fish: ",paste(curNEW$fishID[curNEW$fishLength>(mean(curDB$fishLength)+3*sd(curDB$fishLength))],collapse=", "),sep=" "))
+        # range check on lengths, if those data were collected, first if() throws out NFC rows for anglers in some samples if they caught nothing but others in the boat did
+        if(any(!is.na(curNEW$fishLength))){
+          curNEW_Lcheck=curNEW[!is.na(curNEW$fishLength),]
+          if(any(curNEW_Lcheck$fishLength>0)){
+            if(nrow(curDB)>15){
+              if(any(curNEW_Lcheck$fishLength<=0)){
+                stop(paste("You report negative fishLength in sample ",paste(lakeID,siteName,dateSampleString,timeSampleString,gear,metadataID,sep="_"),
+                        "; Check fish:",paste(curNEW_Lcheck$fishID[curNEW_Lcheck$fishLength<=0],collapse=", "),sep=""))
               }
-            }    
-          }else{
-            warning(paste("We have less than 15 observations for length of species",uniqSpec[j]," and will not be running an automated fishLength check. Be sure to double check the lengths you've entered.",sep=" "))
+              if(any(curNEW_Lcheck$fishLength>(mean(curDB$fishLength)+3*sd(curDB$fishLength)))){
+                if(force_fishLength==FALSE){
+                  stop(paste("You report fish longer than 3 standard deviations above the mean ever observed by us for",uniqSpec[j],"in sample",paste(lakeID,siteName,dateSampleString,timeSampleString,gear,metadataID,sep="_"),"if you are certain you have fishLength correct for all individuals use the argument force_fishLength;",
+                           "Check fish: ",paste(curNEW_Lcheck$fishID[curNEW_Lcheck$fishLength>(mean(curDB$fishLength)+3*sd(curDB$fishLength))],collapse=", "),sep=" "))
+                }
+              }    
+            }else{
+              warning(paste("We have less than 15 observations for length of species",uniqSpec[j]," and will not be running an automated fishLength check. Be sure to double check the lengths you've entered.",sep=" "))
+            }
           }
         }
-      
         # check on weights (based on length-weight regression), if those data were collected
         if(any(curNEW$fishWeight>0 & !is.na(curNEW$fishWeight))){
           curDB=curDB[!is.na(curDB$fishWeight),]
