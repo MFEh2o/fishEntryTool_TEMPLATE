@@ -36,7 +36,7 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
   }else{
     fishInfoIS=setNames(data.frame(matrix(ncol=ncol(fishInfoDB),nrow=0)),colnames(fishInfoDB))
   }
-  if("fishSampleIS.csv"%in%list.files()){
+  if("fishSamplesIS.csv"%in%list.files()){
     fishSamplesIS=read.csv("fishSamplesIS.csv",header=TRUE,stringsAsFactors=FALSE)
   }else{
     fishSamplesIS=setNames(data.frame(matrix(ncol=ncol(fishSamplesDB),nrow=0)),colnames(fishSamplesDB))
@@ -67,7 +67,7 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
       crew=crew[-1];crew=crew[crew!=""]
       crew=paste(crew, collapse = ",")
       gear=strsplit(cur[7],",")[[1]][2]
-      distanceShocked=strsplit(cur[8],",")[[1]][2]
+      distanceShocked=ifelse(gear=="BE",strsplit(cur[8],",")[[1]][2], 0)
       effort=as.numeric(strsplit(cur[9],",")[[1]][2])
       effortUnits=strsplit(cur[10],",")[[1]][2]
       comments=strsplit(cur[11],",")[[1]][2]
