@@ -143,8 +143,8 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
                           sexualStage_MaierScale=if("sexualStage_MaierScale"%in%colnames(curData)) curData$sexualStage_MaierScale else NA,
                           gpsWaypoint=if("gpsWaypoint"%in%colnames(curData)) curData$gpsWaypoint else NA,
                           finClipBox=if("finClipBox"%in%colnames(curData)) curData$finClipBox else NA,
-                          spineSample=if("spineSample"%in%colnames(curData)) curData$spineSample else NA,
-                          scaleSample=if("scaleSample"%in%colnames(curData)) curData$scaleSample else NA,
+                          spineSample=if("spineSampled"%in%colnames(curData)) curData$spineSampled else NA,
+                          scaleSample=if("scaleSampled"%in%colnames(curData)) curData$scaleSampled else NA,
                           comments=if("comments"%in%colnames(curData)) curData$comments else NA,
                         
                           entryFile=toCompile[i],
