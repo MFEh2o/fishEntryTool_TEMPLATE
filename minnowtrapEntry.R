@@ -4,7 +4,7 @@
 
 Sys.setenv(tz="America/Chicago")
 
-updateMinnowTrap<-function(headerRows=16,dbdir="~/Documents/Research/MFE/database/",db="MFEdb.db",funcdir="~/Documents/Research/MFE/database/db/",
+updateMinnowTrap<-function(headerRows=17,dbdir="~/Documents/Research/MFE/database/",db="MFEdb.db",funcdir="~/Documents/Research/MFE/database/db/",
                      force_lakeID=FALSE,
                      force_siteID=FALSE,
                      force_dayOfYear=FALSE,
@@ -83,12 +83,23 @@ updateMinnowTrap<-function(headerRows=16,dbdir="~/Documents/Research/MFE/databas
       }
     
       #tabular data
-      curData=data.frame(matrix(unlist(strsplit(cur[(headerRows+1):length(cur)],",")),nrow=length(cur)-headerRows,byrow=TRUE),stringsAsFactors=FALSE)
+      # need to deal with empty cells at end of string for each line, thus the gsub() usage
+      toTabular=cur[(headerRows+1):length(cur)]
+      toTabular=gsub(",$",", ",toTabular)
+    
+      curData=data.frame(matrix(unlist(strsplit(toTabular,",")),nrow=length(cur)-headerRows,byrow=TRUE),stringsAsFactors=FALSE)
       colnames(curData)=strsplit(cur[headerRows],",")[[1]]
       curData$fishNum=as.numeric(curData$fishNum)
       curData$fishLength=as.numeric(curData$fishLength)
       curData$fishWeight=as.numeric(curData$fishWeight)
-    
+      curData$trapNumber=as.numeric(curData$trapNumber)
+      
+      # generate site id based on trapNumber
+      curData$siteID=lakeID
+      curData$siteID[curData$trapNumber<10]=paste(lakeID,".00",curData$trapNumber[curData$trapNumber<10],sep="")
+      curData$siteID[curData$trapNumber>9 & curData$trapNumber<100]=paste(lakeID,".0",curData$trapNumber[curData$trapNumber>9 & curData$trapNumber<100],sep="")
+      curData$siteID[curData$trapNumber>99]=paste(lakeID,".",curData$trapNumber[curData$trapNumber>99],sep="")
+      
       #need to be sure that the column names in the entry template are the same as in the database 
       #(change datasheet to match this too); then ones that aren't in curData colnames, get NA and
       #others will match
@@ -104,8 +115,8 @@ updateMinnowTrap<-function(headerRows=16,dbdir="~/Documents/Research/MFE/databas
       # pull only traps with fish in them from curData
       toFI=curData[curData$species!="NFC",]
       fishInfoNEW=data.frame(projectID=rep(projectID,nrow(toFI)),
-                          sampleID=paste(lakeID,toFI$siteName,dateSampleString,timeSampleString,gear,metadataID,sep="_"),
-                          fishID=paste(lakeID,toFI$siteName,dateSampleString,timeSampleString,gear,metadataID,toFI$fishNum,sep="_"),
+                          sampleID=paste(toFI$siteID,dateSampleString,timeSampleString,gear,metadataID,sep="_"),
+                          fishID=paste(toFI$siteID,dateSampleString,timeSampleString,gear,metadataID,toFI$fishNum,sep="_"),
                           fishNum=if("fishNum"%in%colnames(toFI)) as.numeric(toFI$fishNum) else NA,  
                           species=if("species"%in%colnames(toFI)) toFI$species else NA,
                           fishLength=if("fishLength"%in%colnames(toFI)) toFI$fishLength else NA,
@@ -133,13 +144,17 @@ updateMinnowTrap<-function(headerRows=16,dbdir="~/Documents/Research/MFE/databas
                           pectoralFinRemoved=if("pectoralFinRemoved"%in%colnames(toFI)) toFI$pectoralFinRemoved else NA,
                           gonadRemoved=if("gonadRemoved"%in%colnames(toFI)) toFI$gonadRemoved else NA,
                           leftEyeRemoved=if("leftEyeRemoved"%in%colnames(toFI)) toFI$leftEyeRemoved else NA,
+                          finClipCollected=if("finClipCollected"%in%colnames(toFI)) toFI$finClipCollected else NA,
                           photo=if("photo"%in%colnames(toFI)) toFI$photo else NA,
                           gonadWeight=if("gonadWeight"%in%colnames(toFI)) toFI$gonadWeight else NA,
                           rectalTemp=if("rectalTemp"%in%colnames(toFI)) toFI$rectalTemp else NA,
                           gonadSqueze=if("gonadSqueze"%in%colnames(toFI)) toFI$gonadSqueze else NA,
                           sexualStage_MaierScale=if("sexualStage_MaierScale"%in%colnames(toFI)) toFI$sexualStage_MaierScale else NA,
                           gonadWeight=if("gonadWeight"%in%colnames(toFI)) toFI$gonadWeight else NA,
+                          gpsWaypoint=if("gpsWaypoint"%in%colnames(toFI)) toFI$gpsWaypoint else NA,
                           finClipBox=if("finClipBox"%in%colnames(toFI)) toFI$finClipBox else NA,
+                          spineSample=if("spineSampled"%in%colnames(curData)) toFI$spineSampled else NA,
+                          scaleSample=if("scaleSampled"%in%colnames(curData)) toFI$scaleSampled else NA,
                           comments=if("comments"%in%colnames(toFI)) toFI$comments else NA,
                           entryFile=toCompile[i],
                           stringsAsFactors=FALSE)
@@ -158,9 +173,9 @@ updateMinnowTrap<-function(headerRows=16,dbdir="~/Documents/Research/MFE/databas
     
       # generate FISH_SAMPLES rows
       # remove duplicate rows from same trap
-      toFS=curData[!duplicated(curData$siteName),]
-      fishSamplesNEW=data.frame(siteID=paste(lakeID,toFS$siteName,sep="_"),
-                                sampleID=paste(lakeID,toFS$siteName,dateSampleString,timeSampleString,gear,metadataID,sep="_"),
+      toFS=curData[!duplicated(curData$siteID),]
+      fishSamplesNEW=data.frame(siteID=toFS$siteID,
+                                sampleID=paste(toFS$siteID,dateSampleString,timeSampleString,gear,metadataID,sep="_"),
                                 dayOfYear=as.numeric(strftime(strptime(dateSample,format="%Y-%m-%d"),format="%j")),
                                 dateSet=dateSet,
                                 dateSample=dateSample,
