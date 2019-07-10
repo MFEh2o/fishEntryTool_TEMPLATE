@@ -38,7 +38,7 @@ fishS$dateSet[fishS$sampleID=="SV_wholeShoreline_00190603_2045_AN_Fishscapes.Ang
 
 #fixing fishIDs from that same sample "SV_wholeShoreline_00190603_2045_AN_Fishscapes.Angling.20180625"
 fixI=fishI[fishI$sampleID=="SV_wholeShoreline_00190603_2045_AN_Fishscapes.Angling.20180625",] # see wh at needs to be fixed
-fishI$sampleID[fishI$sampleID=="SV_wholeShoreline_00190603_2045_AN_Fishscapes.Angling.20180625"]=SV_wholeShoreline_20190603_2045_AN_Fishscapes.Angling.20180625
+fishI$sampleID[fishI$sampleID=="SV_wholeShoreline_00190603_2045_AN_Fishscapes.Angling.20180625"]="SV_wholeShoreline_20190603_2045_AN_Fishscapes.Angling.20180625"
 temp=character()
 for(i in 1:nrow(fixI)){
   temp[i]=paste("SV_wholeShoreline_20190603_2045_AN_Fishscapes.Angling.20180625", fixI$fishNum[i], sep = "_")
