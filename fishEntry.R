@@ -158,11 +158,15 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
       }
       abbrevs=unique(fishInfoNEW$species)
       for(j in 1:length(abbrevs)){
-        if(abbrevs[j]%in%c("minnow", "BFN", "RHS")==T){
+        if(abbrevs[j]%in%c("minnow", "BFN", "RHS", "unidentifiable")==T){
           if(abbrevs[j]=="RHS"){
             fishInfoNEW$species[fishInfoNEW$species=="RHS"]="redhorse"
           }else{
+            if(abbrevs[j]=="unidentifiable"){
+              fishInfoNEW$species[fishInfoNEW$species=="unidentifiable"]="fish_unidentifiable"
+            }else{
             fishInfoNEW$species[fishInfoNEW$species%in%c("minnow", "BFN")==T]=ifelse(fishInfoNEW$species[fishInfoNEW$species%in%c("minnow", "BFN")]=="minnow", "minnow", "bowfin")
+            }
           }
         }else{
         fishInfoNEW$species[fishInfoNEW$species==abbrevs[j]]=fishNames$commonName[fishNames$abbreviation==abbrevs[j]]
