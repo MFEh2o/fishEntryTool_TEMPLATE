@@ -6,7 +6,7 @@
 # and saved as .csv files
 
 #setwd("C:/Users/jones/OneDrive/temp_fishscapesCSVentries") #UNDERC lab computer wd
-#setwd("C:/Users/jones/Box Sync/NDstuff/ND_R/fishEntryTool") #Colin's PC wd
+#setwd("C:/Users/jones/OneDrive/temp_fishscapesCSVentries") #Colin's PC wd
 
 # Load the entry function
 source('C:/Users/jones/Documents/Summer2019/Fish/fishEntryTool/fishEntry.R') #lab computer
@@ -23,7 +23,7 @@ db="MFEdb.db"
 funcdir="C:/Users/jones/Documents/Summer2019/Database/dbFunctions/"
 
 #update
-updateFish(dbdir=dbdir,db=db,funcdir=funcdir, force_siteID = T, force_clip = T, force_species = T, force_sampleGroup = T, force_metadataID = T)
+updateFish(dbdir=dbdir,db=db,funcdir=funcdir, force_siteID = T, force_clip = T, force_species = T, force_sampleGroup = T, force_metadataID = T, force_fishLength = T, force_distanceShocked = T)
 
 #manually fixing some random issues that won't go away like silver lake 6/3/19 20:40 won't read in right 
 fishS=read.csv("fishSamplesIS.csv", stringsAsFactors = F)
