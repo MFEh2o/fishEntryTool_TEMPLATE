@@ -158,14 +158,18 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
       }
       abbrevs=unique(fishInfoNEW$species)
       for(j in 1:length(abbrevs)){
-        if(abbrevs[j]%in%c("minnow", "BFN", "RHS", "unidentifiable")==T){
+        if(abbrevs[j]%in%c("minnow", "BFN", "RHS", "unidentifiable", "PKL")==T){
           if(abbrevs[j]=="RHS"){
             fishInfoNEW$species[fishInfoNEW$species=="RHS"]="redhorse"
           }else{
             if(abbrevs[j]=="unidentifiable"){
               fishInfoNEW$species[fishInfoNEW$species=="unidentifiable"]="fish_unidentifiable"
             }else{
-            fishInfoNEW$species[fishInfoNEW$species%in%c("minnow", "BFN")==T]=ifelse(fishInfoNEW$species[fishInfoNEW$species%in%c("minnow", "BFN")]=="minnow", "minnow", "bowfin")
+              if(abbrevs[j]=="PKL"){
+                fishInfoNEW$species[fishInfoNEW$species=="PKL"]="grass_pickerel"
+              }else{
+                fishInfoNEW$species[fishInfoNEW$species%in%c("minnow", "BFN")==T]=ifelse(fishInfoNEW$species[fishInfoNEW$species%in%c("minnow", "BFN")]=="minnow", "minnow", "bowfin")
+              }
             }
           }
         }else{
@@ -309,7 +313,7 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
       }
       
       # effort in an acceptable range
-      if(fishSamplesNEW$effort<0 | fishSamplesNEW$effort>24){
+      if(fishSamplesNEW$effort<=0 | fishSamplesNEW$effort>24){
         if(force_effort==FALSE){
           stop(paste("your effort (",fishSamplesNew$effort,") is outside the normal range; if you are certain this is the correct effort use the argument force_effort."))
         }
