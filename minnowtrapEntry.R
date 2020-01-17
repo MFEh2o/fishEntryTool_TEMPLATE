@@ -114,62 +114,63 @@ updateMinnowTrap<-function(headerRows=17,dbdir="~/Documents/Research/MFE/databas
       # generate FISH_INFO rows
       # pull only traps with fish in them from curData
       toFI=curData[curData$species!="NFC",]
-      fishInfoNEW=data.frame(projectID=rep(projectID,nrow(toFI)),
-                          sampleID=paste(toFI$siteID,dateSampleString,timeSampleString,gear,metadataID,sep="_"),
-                          fishID=paste(toFI$siteID,dateSampleString,timeSampleString,gear,metadataID,toFI$fishNum,sep="_"),
-                          fishNum=if("fishNum"%in%colnames(toFI)) as.numeric(toFI$fishNum) else NA,  
-                          species=if("species"%in%colnames(toFI)) toFI$species else NA,
-                          fishLength=if("fishLength"%in%colnames(toFI)) toFI$fishLength else NA,
-                          standardLength=if("standardLength"%in%colnames(toFI)) toFI$standardLength else NA,
-                          fishWeight=if("fishWeight"%in%colnames(toFI)) toFI$fishWeight else NA,
-                          caughtBy=if("caughtBy"%in%colnames(toFI)) toFI$caughtBy else NA,
-                          jumperDescription=if("jumperDescription"%in%colnames(toFI)) toFI$jumperDescription else NA,
-                          useTagMarkRecap=if("useTagMarkRecap"%in%colnames(toFI)) toFI$useTagMarkRecap else NA,
-                          tagID=if("tagID"%in%colnames(toFI)) toFI$tagID else NA,
-                          oldTag=if("oldTag"%in%colnames(toFI)) toFI$oldATag else NA,
-                          tagApply=if("tagApply"%in%colnames(toFI)) toFI$tagApply else NA,
-                          tagRecapture=if("tagRecapture"%in%colnames(toFI)) toFI$tagRecapture else NA,
-                          tagApplyType=if("tagApplyType"%in%colnames(toFI)) toFI$tagApplyType else NA,
-                          tagRecaptureType=if("tagRecaptureType"%in%colnames(toFI)) toFI$tagRecaptureType else NA,
-                          clipApply=if("clipApply"%in%colnames(toFI)) toFI$clipApply else NA,
-                          clipRecapture=if("clipRecapture"%in%colnames(toFI)) toFI$clipRecapture else NA,
-                          sex=if("sex"%in%colnames(toFI)) toFI$sex else NA,
-                          mortality=if("mortality"%in%colnames(toFI)) toFI$mortality else NA,
-                          removed=if("removed"%in%colnames(toFI)) toFI$removed else NA,
-                          otolithSample=if("otolithSample"%in%colnames(toFI)) toFI$otolithSample else NA,
-                          tissueSampled=if("tissueSampled"%in%colnames(toFI)) toFI$tissueSampled else NA,
-                          dietSampled=if("dietSampled"%in%colnames(toFI)) toFI$dietSampled else NA,
-                          stomachRemoved=if("stomachRemoved"%in%colnames(toFI)) toFI$stomachRemoved else NA,
-                          gillArchRemoved=if("gillArchRemoved"%in%colnames(toFI)) toFI$gillArchRemoved else NA,
-                          pectoralFinRemoved=if("pectoralFinRemoved"%in%colnames(toFI)) toFI$pectoralFinRemoved else NA,
-                          gonadRemoved=if("gonadRemoved"%in%colnames(toFI)) toFI$gonadRemoved else NA,
-                          leftEyeRemoved=if("leftEyeRemoved"%in%colnames(toFI)) toFI$leftEyeRemoved else NA,
-                          finClipCollected=if("finClipCollected"%in%colnames(toFI)) toFI$finClipCollected else NA,
-                          photo=if("photo"%in%colnames(toFI)) toFI$photo else NA,
-                          gonadWeight=if("gonadWeight"%in%colnames(toFI)) toFI$gonadWeight else NA,
-                          rectalTemp=if("rectalTemp"%in%colnames(toFI)) toFI$rectalTemp else NA,
-                          gonadSqueze=if("gonadSqueze"%in%colnames(toFI)) toFI$gonadSqueze else NA,
-                          sexualStage_MaierScale=if("sexualStage_MaierScale"%in%colnames(toFI)) toFI$sexualStage_MaierScale else NA,
-                          gonadWeight=if("gonadWeight"%in%colnames(toFI)) toFI$gonadWeight else NA,
-                          gpsWaypoint=if("gpsWaypoint"%in%colnames(toFI)) toFI$gpsWaypoint else NA,
-                          finClipBox=if("finClipBox"%in%colnames(toFI)) toFI$finClipBox else NA,
-                          spineSample=if("spineSampled"%in%colnames(curData)) toFI$spineSampled else NA,
-                          scaleSample=if("scaleSampled"%in%colnames(curData)) toFI$scaleSampled else NA,
-                          comments=if("comments"%in%colnames(toFI)) toFI$comments else NA,
-                          entryFile=toCompile[i],
-                          stringsAsFactors=FALSE)
+      if(sum(curData$species!="NFC")==0){
+        fishInfoNEW=data.frame(projectID=rep(projectID,nrow(toFI)),
+                            sampleID=paste(toFI$siteID,dateSampleString,timeSampleString,gear,metadataID,sep="_"),
+                            fishID=paste(toFI$siteID,dateSampleString,timeSampleString,gear,metadataID,toFI$fishNum,sep="_"),
+                            fishNum=if("fishNum"%in%colnames(toFI)) as.numeric(toFI$fishNum) else NA,  
+                            species=if("species"%in%colnames(toFI)) toFI$species else NA,
+                            fishLength=if("fishLength"%in%colnames(toFI)) toFI$fishLength else NA,
+                            standardLength=if("standardLength"%in%colnames(toFI)) toFI$standardLength else NA,
+                            fishWeight=if("fishWeight"%in%colnames(toFI)) toFI$fishWeight else NA,
+                            caughtBy=if("caughtBy"%in%colnames(toFI)) toFI$caughtBy else NA,
+                            jumperDescription=if("jumperDescription"%in%colnames(toFI)) toFI$jumperDescription else NA,
+                            useTagMarkRecap=if("useTagMarkRecap"%in%colnames(toFI)) toFI$useTagMarkRecap else NA,
+                            tagID=if("tagID"%in%colnames(toFI)) toFI$tagID else NA,
+                            oldTag=if("oldTag"%in%colnames(toFI)) toFI$oldATag else NA,
+                            tagApply=if("tagApply"%in%colnames(toFI)) toFI$tagApply else NA,
+                            tagRecapture=if("tagRecapture"%in%colnames(toFI)) toFI$tagRecapture else NA,
+                            tagApplyType=if("tagApplyType"%in%colnames(toFI)) toFI$tagApplyType else NA,
+                            tagRecaptureType=if("tagRecaptureType"%in%colnames(toFI)) toFI$tagRecaptureType else NA,
+                            clipApply=if("clipApply"%in%colnames(toFI)) toFI$clipApply else NA,
+                            clipRecapture=if("clipRecapture"%in%colnames(toFI)) toFI$clipRecapture else NA,
+                            sex=if("sex"%in%colnames(toFI)) toFI$sex else NA,
+                            mortality=if("mortality"%in%colnames(toFI)) toFI$mortality else NA,
+                            removed=if("removed"%in%colnames(toFI)) toFI$removed else NA,
+                            otolithSample=if("otolithSample"%in%colnames(toFI)) toFI$otolithSample else NA,
+                            tissueSampled=if("tissueSampled"%in%colnames(toFI)) toFI$tissueSampled else NA,
+                            dietSampled=if("dietSampled"%in%colnames(toFI)) toFI$dietSampled else NA,
+                            stomachRemoved=if("stomachRemoved"%in%colnames(toFI)) toFI$stomachRemoved else NA,
+                            gillArchRemoved=if("gillArchRemoved"%in%colnames(toFI)) toFI$gillArchRemoved else NA,
+                            pectoralFinRemoved=if("pectoralFinRemoved"%in%colnames(toFI)) toFI$pectoralFinRemoved else NA,
+                            gonadRemoved=if("gonadRemoved"%in%colnames(toFI)) toFI$gonadRemoved else NA,
+                            leftEyeRemoved=if("leftEyeRemoved"%in%colnames(toFI)) toFI$leftEyeRemoved else NA,
+                            finClipCollected=if("finClipCollected"%in%colnames(toFI)) toFI$finClipCollected else NA,
+                            photo=if("photo"%in%colnames(toFI)) toFI$photo else NA,
+                            gonadWeight=if("gonadWeight"%in%colnames(toFI)) toFI$gonadWeight else NA,
+                            rectalTemp=if("rectalTemp"%in%colnames(toFI)) toFI$rectalTemp else NA,
+                            gonadSqueze=if("gonadSqueze"%in%colnames(toFI)) toFI$gonadSqueze else NA,
+                            sexualStage_MaierScale=if("sexualStage_MaierScale"%in%colnames(toFI)) toFI$sexualStage_MaierScale else NA,
+                            gonadWeight=if("gonadWeight"%in%colnames(toFI)) toFI$gonadWeight else NA,
+                            gpsWaypoint=if("gpsWaypoint"%in%colnames(toFI)) toFI$gpsWaypoint else NA,
+                            finClipBox=if("finClipBox"%in%colnames(toFI)) toFI$finClipBox else NA,
+                            spineSample=if("spineSampled"%in%colnames(curData)) toFI$spineSampled else NA,
+                            scaleSample=if("scaleSampled"%in%colnames(curData)) toFI$scaleSampled else NA,
+                            comments=if("comments"%in%colnames(toFI)) toFI$comments else NA,
+                            entryFile=toCompile[i],
+                            stringsAsFactors=FALSE)
       
-      # convert species abbreviations to common names
-      if(any(!fishInfoNEW$species%in%fishNames$abbreviation)){
-        if(force_species==FALSE){
-          stop(paste("the species (",unique(fishInfoNEW$species[!fishInfoNEW$species%in%fishNames$abbreviation]),") is not in the MFE database nor in this season's working database; if you are certain this is the correct species name, use the argument force_species to add it to this season's working database.",sep=""))
+        # convert species abbreviations to common names
+        if(any(!fishInfoNEW$species%in%fishNames$abbreviation)){
+          if(force_species==FALSE){
+            stop(paste("the species (",unique(fishInfoNEW$species[!fishInfoNEW$species%in%fishNames$abbreviation]),") is not in the MFE database nor in this season's working database; if you are certain this is the correct species name, use the argument force_species to add it to this season's working database.",sep=""))
+          }
+        }
+        abbrevs=unique(fishInfoNEW$species)
+        for(j in 1:length(abbrevs)){
+          fishInfoNEW$species[fishInfoNEW$species==abbrevs[j]]=fishNames$commonName[fishNames$abbreviation==abbrevs[j]]
         }
       }
-      abbrevs=unique(fishInfoNEW$species)
-      for(j in 1:length(abbrevs)){
-        fishInfoNEW$species[fishInfoNEW$species==abbrevs[j]]=fishNames$commonName[fishNames$abbreviation==abbrevs[j]]
-      }
-        
     
       # generate FISH_SAMPLES rows
       # remove duplicate rows from same trap
