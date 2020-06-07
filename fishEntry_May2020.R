@@ -398,6 +398,7 @@ updateFish<-function(headerRows=18,dbdir="C:/Users/Amary/Documents/MFEDB/databas
             }
           }
         }
+        
         # check on weights (based on length-weight regression), if those data were collected
         if(any(!is.na(curNEW$fishWeight))){
           curDB=curDB[!is.na(curDB$fishWeight),]
@@ -408,7 +409,8 @@ updateFish<-function(headerRows=18,dbdir="C:/Users/Amary/Documents/MFEDB/databas
               stop(paste("You report negative fishWeight in sample ",paste(lakeID,siteName,dateSampleString,timeSampleString,gear,metadataID,sep="_"),
                           ". Check fish: ",paste(curNEW$fishID[curNEW$fishWeight<=0],collapse=", "),sep=""))
              }
-             #fit length-weight regression for uniqSpec[j]
+             
+            #fit length-weight regression for uniqSpec[j]
              curDB$logWeight=log(curDB$fishWeight)
              curDB$logLength=log(curDB$fishLength)
              lwreg=lm(logWeight~logLength,data=curDB)
@@ -489,7 +491,7 @@ updateFish<-function(headerRows=18,dbdir="C:/Users/Amary/Documents/MFEDB/databas
       # - tagRecap accidently matches an old apply
       # check lengths when matching recap to apply
       # use vonB for Long Lake and or Wisconsin for this...
-#     if(length(tagsRecapped)>0){
+     if(length(tagsRecapped)>0){
         for(j in 1:length(tagsRecapped)){
           # if we measured a length
           if(!is.na(curNEW$fishLength[curNEW$tagRecapture==tagsRecapped[j]])){
