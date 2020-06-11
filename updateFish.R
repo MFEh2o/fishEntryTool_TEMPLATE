@@ -10,7 +10,7 @@
 
 # Load the entry function
 source('C:/Users/jones/Documents/Summer2019/Fish/fishEntryTool/fishEntry.R') #lab computer
-#source('C:/Users/jones/Box Sync/NDstuff/ND_R/fishEntryTool/fishEntry.R') #colin 's computer
+source('C:/Users/jones/Box Sync/NDstuff/ND_R/fishEntryTool/fishEntry.R') #colin 's computer
 source('C:/Users/TEMP/Documents/fishEntry.R') #camille's pc
 
 # # set variables - Colin's computer
