@@ -11,6 +11,7 @@
 # Load the entry function
 source('C:/Users/jones/Documents/Summer2019/Fish/fishEntryTool/fishEntry.R') #lab computer
 #source('C:/Users/jones/Box Sync/NDstuff/ND_R/fishEntryTool/fishEntry.R') #colin 's computer
+source('C:/Users/TEMP/Documents/fishEntry.R') #camille's pc
 
 # # set variables - Colin's computer
 # dbdir="C:/Users/jones/Box Sync/NDstuff/ND_R/"
@@ -25,3 +26,12 @@ funcdir="C:/Users/jones/Documents/Summer2019/Database/dbFunctions/"
 #update
 updateFish(dbdir=dbdir,db=db,funcdir=funcdir, force_siteID = T, force_sampleGroup = T, force_clip = T, force_species = T, force_metadataID = T, force_fishLength = T, force_effort = T, force_distanceShocked = T, force_effortUnits = T)
 
+#set variables - Camille's pc
+dbdir="C:/Users/TEMP/Documents"
+#database name
+db="MFEdb.db"
+funcdir="C:/Users/TEMP/Documents/"
+source("~/dbUtil.R")
+
+#update
+updateFish(dbdir=dbdir,db=db,funcdir=funcdir, force_clip=T, force_metadataID=T, force_siteID=T,force_projectID=T, force_sampleGroup=T)

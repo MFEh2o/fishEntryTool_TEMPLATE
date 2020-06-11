@@ -255,7 +255,7 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
         fishDietsNEW=data.frame(fishID=paste(lakeID,siteName,dateSampleString,timeSampleString,gear,metadataID,curData$fishNum,sep="_")[curData$dietSample==1],
                                 lakeID=lakeID[curData$dietSampled==1],
                                 dateSample=dateSample[curData$dietSampled==1],
-                                species=species[curData$dietSampled==1]
+                                species=curData$species[curData$dietSampled==1]
                                 )
       }
 
@@ -587,6 +587,9 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
       if(exists("fishscalesNEW")){fishscalesLOG=rbind(fishscalesLOG,fishscalesNEW)}
       
     }
+    #makes fishinfo IS character types to keep digits of tags
+    fishInfoIS$tagApply=as.character(fishInfoIS$tagApply)
+    fishInfoIS$tagRecapture=as.character(fishInfoIS$tagRecapture)
     
     # write updates to files
     write.csv(fishInfoIS,"fishInfoIS.csv",row.names=FALSE)
