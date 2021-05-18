@@ -397,14 +397,16 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
           }
         }
         # check on weights (based on length-weight regression), if those data were collected
-        if(any(curNEW$fishWeight>0 & !is.na(curNEW$fishWeight))){
+        if(any(curNEW$fishWeight>0 & !is.na(curNEW$fishWeight) & !is.na(curNEW$fishLength))){
           curDB=curDB[!is.na(curDB$fishWeight),]
           curDB=curDB[curDB$fishWeight>0,]
+          curNEW=curNEW[!is.na(curNEW$fishWeight),]
           if(nrow(curDB)>15){
             if(any(curNEW$fishWeight<=0)){
               stop(paste("You report negative fishWeight in sample ",paste(lakeID,siteName,dateSampleString,timeSampleString,gear,metadataID,sep="_"),
                          ". Check fish: ",paste(curNEW$fishID[curNEW$fishWeight<=0],collapse=", "),sep=""))
             }
+            #if(any(!is.na(curDB$fishLength))){
             #fit length-weight regression for uniqSpec[j]
             curDB$logWeight=log(curDB$fishWeight)
             curDB$logLength=log(curDB$fishLength)
@@ -412,6 +414,9 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
             preds=predict(lwreg,newdata=data.frame(logLength=log(as.numeric(curNEW$fishLength))),interval="prediction",se.fit=TRUE,level=0.99)
             predsLow=exp(preds$fit[,2])
             predsHigh=exp(preds$fit[,3])
+            predsLow=is.na(predsLow)
+            predsHigh=!is.na(predsHigh)
+            #}
             
             if(any(curNEW$fishWeight<predsLow | curNEW$fishWeight>predsHigh)){
               if(force_fishWeight==FALSE){
@@ -464,12 +469,12 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
           for(j in 1:length(tagsApplied)){
             if(tagsApplied[j]%in%fishInfoDB$tagApply){
               tagApplyStop=TRUE
-              temp=rbind(fishInfoDB[fishInfoDB$tagApply==tagsApplied[j],c(1:8,12:19,38:39)],curNEW[curNEW$tagApply==tagsApplied[j],c(1:8,12:19,38,41)])
+              temp=rbind(fishInfoDB[fishInfoDB$tagApply==tagsApplied[j],c(1:8,12:19,38,41)],curNEW[curNEW$tagApply==tagsApplied[j],c(1:8,12:19,38,41)])
               print(temp)
             }
-            if(tagsApplied[i]%in%fishInfoIS$tagApply){
+            if(tagsApplied[j]%in%fishInfoIS$tagApply){
               tagApplyStop=TRUE
-              temp=rbind(fishInfoIS[fishInfoIS$tagApply==tagsApplied[j],c(1:8,12:19,38:39)],curNEW[curNEW$tagApply==tagsApplied[j],c(1:8,12:19,38,41)])
+              temp=rbind(fishInfoIS[fishInfoIS$tagApply==tagsApplied[j],c(1:8,12:19,38,41)],curNEW[curNEW$tagApply==tagsApplied[j],c(1:8,12:19,38,41)])
               print(temp)
             }
           }
@@ -506,7 +511,8 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
                   K=0.32
                   t0=-0.599
                   tagLength=fishInfoIS$fishLength[fishInfoIS$tagApply==tagsRecapped[j]]
-                  tagDate=fishSamplesIS$dateSample[fishSamplesIS$sampleID==fishInfoIS$sampleID[fishInfoIS$tagApply==tagsRecapped[j]]]
+                  tagSampleID=tagSampleID[!is.na(tagSampleID)]
+                  tagDate=fishSamplesIS$dateSample[fishSamplesIS$sampleID==tagSampleID]
                   growthTime=as.Date(dateSample)-as.Date(tagDate)
                   age1=log(1-tagLength/Linf)/-K+t0
                   age2=age1+growthTime
@@ -522,14 +528,17 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
                   K=0.19
                   t0=-0.024
                   tagLength=fishInfoIS$fishLength[fishInfoIS$tagApply==tagsRecapped[j]]
-                  tagDate=fishSamplesIS$dateSample[fishSamplesIS$sampleID==fishInfoIS$sampleID[fishInfoIS$tagApply==tagsRecapped[j]]]
+                  tagLength=tagLength[!is.na(tagLength)]
+                  tagSampleID=fishInfoIS$sampleID[fishInfoIS$tagApply==tagsRecapped[j]]
+                  tagSampleID=tagSampleID[!is.na(tagSampleID)]
+                  tagDate=fishSamplesIS$dateSample[fishSamplesIS$sampleID==tagSampleID]
                   growthTime=(as.Date(dateSample)-as.Date(tagDate))/365  # difference in days, so convert to years for vonB
                   age1=log(1-tagLength/Linf)/-K+t0
                   age2=age1+growthTime
-                  expL=Linf*(1-exp(-K*(age2-t0)))
+                  expL=Linf*(1-exp(as.numeric(-K*(age2-t0))))
                   obsL=curNEW$fishLength[curNEW$tagRecapture==tagsRecapped[j]]
                   #if the fish we recapped is shorter or longer than fish tagged, based on vonB
-                  if(abs(expL-obsL)>(0.1*obsL)){
+                  if(abs((expL)-obsL)>(0.1*obsL)){
                     stop(paste("The fish with tagRecapture:",tagsRecapped[j],"is a length that would not be expected. Is there a problem with the tag data or length data?",sep=" "))
                   }
                 }            
@@ -545,11 +554,12 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
                   K=0.32
                   t0=-0.599
                   tagLength=fishInfoDB$fishLength[fishInfoDB$tagApply==tagsRecapped[j]]
-                  tagDate=fishSamplesDB$dateSample[fishSamplesDB$sampleID==fishInfoDB$sampleID[fishInfoDB$tagApply==tagsRecapped[j]]]
+                  tagSampleID=tagSampleID[!is.na(tagSampleID)]
+                  tagDate=fishSamplesIS$dateSample[fishSamplesIS$sampleID==tagSampleID]
                   growthTime=as.Date(dateSample)-as.Date(tagDate)
                   age1=log(1-tagLength/Linf)/-K+t0
                   age2=age1+growthTime
-                  expL=Linf*(1-exp(-K*(age2-t0)))
+                  expL=Linf*(1-exp(as.numeric(-K*(age2-t0))))
                   obsL=curNEW$fishLength[curNEW$tagRecapture==tagsRecapped[j]]
                   #if the fish we recapped is shorter or longer than fish tagged, based on vonB
                   if(abs(expL-obsL)>(0.1*obsL)){
@@ -561,7 +571,8 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
                   K=0.19
                   t0=-0.024
                   tagLength=fishInfoDB$fishLength[fishInfoDB$tagApply==tagsRecapped[j]]
-                  tagDate=fishSamplesDB$dateSample[fishSamplesDB$sampleID==fishInfoDB$sampleID[fishInfoDB$tagApply==tagsRecapped[j]]]
+                  tagSampleID=tagSampleID[!is.na(tagSampleID)]
+                  tagDate=fishSamplesIS$dateSample[fishSamplesIS$sampleID==tagSampleID]
                   growthTime=(as.Date(dateSample)-as.Date(tagDate))/365  # difference in days, so convert to years for vonB
                   age1=log(1-tagLength/Linf)/-K+t0
                   age2=age1+growthTime
