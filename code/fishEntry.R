@@ -15,8 +15,9 @@ Sys.setenv(tz = "America/Chicago")
 dbdir <- here()
 db <- "MFEdb_20210423.db"
 funcdir <- here("code")
+isdir <- here("inSeason")
 
-updateFish <- function(headerRows = 18, dbdir, db, funcdir,
+updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                      force_lakeID = FALSE,
                      force_siteID = FALSE,
                      force_dayOfYear = FALSE,
@@ -41,21 +42,24 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir,
   otu <- suppressWarnings(dbTable("otu"))
   fishNames <- otu %>% filter(!is.na(abbreviation)) # #XXX This assumes that all fish in the database have an abbreviation. I'm not sure that's a safe assumption. Would it be better to do all where the category is "fish"?
 
-  # load in-season database files
-  if("fishInfoIS.csv"%in%list.files()){
-    fishInfoIS=read.csv("fishInfoIS.csv",header=TRUE,stringsAsFactors=FALSE)
+  # Load in-season database files, or initialize them
+  if("fishInfoIS.csv" %in% list.files(isdir)){
+    fishInfoIS <- read.csv(here(isdir, "fishInfoIS.csv"), 
+                           header = T, stringsAsFactors = F)
   }else{
-    fishInfoIS=setNames(data.frame(matrix(ncol=ncol(fishInfoDB),nrow=0)),colnames(fishInfoDB))
+    fishInfoIS <- fishInfoDB[FALSE,]
   }
-  if("fishSamplesIS.csv"%in%list.files()){
-    fishSamplesIS=read.csv("fishSamplesIS.csv",header=TRUE,stringsAsFactors=FALSE)
+  if("fishSamplesIS.csv" %in% list.files(isdir)){
+    fishSamplesIS <- read.csv(here(isdir, "fishSamplesIS.csv"), 
+                              header = T, stringsAsFactors = F)
   }else{
-    fishSamplesIS=setNames(data.frame(matrix(ncol=ncol(fishSamplesDB),nrow=0)),colnames(fishSamplesDB))
+    fishSamplesIS <- fishSamplesDB[FALSE,]
   }
 
-  # check which files have been compiled and which have not in the directory
-  beenCompiled=unique(fishInfoIS$entryFile)
-  toCompile=list.files(pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}\\.csv")
+  # Check which files have been compiled and which have not in the directory
+  beenCompiled <- unique(fishInfoIS$entryFile)
+  toCompile <- list.files(path = here("sampleSheets"), 
+                          pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}\\.csv")
   toCompile=toCompile[!(toCompile%in%beenCompiled)]
   if(length(toCompile)==0){
     #no files that have not been compiled into the in-season database
