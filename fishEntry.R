@@ -446,7 +446,7 @@ updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db
         if(any(!unique(clipRecap)%in%c(fishInfoDB$clipApply[grepl(lakeID,fishInfoDB$sampleID)],fishInfoIS$clipApply[grepl(lakeID,fishInfoIS$sampleID)]))){
           
           if(force_clip==FALSE){
-            stop("You have indicated a clipApply or clipRecapture that is not in the database or in-season database. If you are certain this is the correct clipApply or clipRecapture then use the argument force_clip.")
+            stop(paste("You have indicated a clipApply or clipRecapture that is not in the database or in-season database.",lakeID, ". If you are certain this is the correct clipApply or clipRecapture then use the argument force_clip."))
           }
         }
       }
