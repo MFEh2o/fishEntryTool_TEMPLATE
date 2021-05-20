@@ -1,25 +1,29 @@
-# function for generating in-season database files from fish datasheets
-# 2019-03-20
-# SEJ
+# Function for generating in-season database files from fish datasheets
+# Originally developed by Stuart E. Jones
+# Last updated by Kaija Gahm, May 2021
 
-Sys.setenv(tz="America/Chicago")
+# Load packages -----------------------------------------------------------
+library(tidyverse)
+library(here)
+library(checkmate)
 
-updateFish<-function(headerRows=18,dbdir="~/Documents/Research/MFE/database/",db="MFEdb.db",funcdir="~/Documents/Research/MFE/database/db/",
-                     force_lakeID=FALSE,
-                     force_siteID=FALSE,
-                     force_dayOfYear=FALSE,
-                     force_gear=FALSE,
-                     force_sampleGroup=FALSE,
-                     force_effort=FALSE,
-                     force_effortUnits=FALSE,
-                     force_distanceShocked=FALSE,
-                     force_metadataID=FALSE,
-                     force_projectID=FALSE,
-                     force_species=FALSE,
-                     force_fishLength=FALSE,
-                     force_fishWeight=FALSE,
-                     force_clip=FALSE
-                    ){
+Sys.setenv(tz = "America/Chicago")
+
+updateFish <- function(headerRows = 18, dbdir, db, funcdir,
+                     force_lakeID = FALSE,
+                     force_siteID = FALSE,
+                     force_dayOfYear = FALSE,
+                     force_gear = FALSE,
+                     force_sampleGroup = FALSE,
+                     force_effort = FALSE,
+                     force_effortUnits = FALSE,
+                     force_distanceShocked = FALSE,
+                     force_metadataID = FALSE,
+                     force_projectID = FALSE,
+                     force_species = FALSE,
+                     force_fishLength = FALSE,
+                     force_fishWeight = FALSE,
+                     force_clip = FALSE){
 
   source(paste(funcdir,"dbUtil.R",sep=""))
   
