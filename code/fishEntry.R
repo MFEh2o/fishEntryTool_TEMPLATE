@@ -2,12 +2,19 @@
 # Originally developed by Stuart E. Jones
 # Last updated by Kaija Gahm, May 2021
 
+# Show full text of errors and warnings
+options(warning.length = 3000L, error.length = 3000L)
+
 # Load packages -----------------------------------------------------------
 library(tidyverse)
 library(here)
 library(checkmate)
 
 Sys.setenv(tz = "America/Chicago")
+
+dbdir <- here()
+db <- "MFEdb_20210423.db"
+funcdir <- here("code")
 
 updateFish <- function(headerRows = 18, dbdir, db, funcdir,
                      force_lakeID = FALSE,
@@ -24,15 +31,15 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir,
                      force_fishLength = FALSE,
                      force_fishWeight = FALSE,
                      force_clip = FALSE){
-
-  source(paste(funcdir,"dbUtil.R",sep=""))
   
-  # load tables from database
-  lakesDB=dbTable("LAKES")
-  fishSamplesDB=dbTable("FISH_SAMPLES")
-  fishInfoDB=dbTable("FISH_INFO")
-  otu=dbTable("OTU")
-  fishNames=otu[otu$abbreviation!="NA",]
+  source(file.path(funcdir, "dbUtil.R")) # load the dbUtil functions
+  
+  # Load tables from database
+  lakesDB <- suppressWarnings(dbTable("lakes"))
+  fishSamplesDB <- suppressWarnings(dbTable("fish_samples"))
+  fishInfoDB <- suppressWarnings(dbTable("fish_info"))
+  otu <- suppressWarnings(dbTable("otu"))
+  fishNames <- otu %>% filter(!is.na(abbreviation)) # #XXX This assumes that all fish in the database have an abbreviation. I'm not sure that's a safe assumption. Would it be better to do all where the category is "fish"?
 
   # load in-season database files
   if("fishInfoIS.csv"%in%list.files()){
