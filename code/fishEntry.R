@@ -157,17 +157,16 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       }else{
         fishSpinesLOG <- data.frame()
       }
-      
-      # Make new fish spines rows # XXX START HERE: move the below code for fishspinesNEW up to this if statement.
+      fishspinesNEW <- curData %>%
+        filter(spineSample == 1) %>%
+        select(fishNum, fishLength, fishWeight) %>%
+        mutate(fishID = paste(header$lakeID, header$siteName, dateSampleString,
+                              timeSampleString, header$gear, header$metadataID,
+                              fishNum, sep = "_")) %>%
+        rename("lengthAtCapture" = fishLength,
+               "weightAtCapture" = fishWeight)
     }
   }
-  
-  
-  fishspinesNEW = data.frame(fishID = paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, curData$fishNum, sep = "_")[curData$spineSample == 1], 
-         lengthAtCapture = curData$length[curData$spineSample == 1], 
-         weightAtCapture = curData$weight[curData$spineSample == 1]
-  )
-  }  
   
   # check for scales pulled and generate a log of fish scales
   if("scaleSample"%in%colnames(curData) & any(curData$scaleSample == 1)){
