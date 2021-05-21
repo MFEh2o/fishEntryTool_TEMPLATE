@@ -66,13 +66,11 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
  "The in season database is up to date; no new files to compile"
  }else{
  # There are files to be compiled; generate rows to append
- for(i in 1:length(toCompile)){ # XXX START HERE--need an example data sheet to run through the tool.
-  cur <- scan(toCompile[i], what = character(), sep = "\n")
- 
+ for(i in 1:length(toCompile)){
+   cur <- read.csv(here("sampleSheets", toCompile[i]), na.strings = c("", " ", "NA"), header = F)
+   
   # Pull header info
-  projectID = as.numeric(strsplit(cur[1], ", ")[[1]][2])
-  lakeID = strsplit(cur[2], ", ")[[1]][2]
-  siteName = strsplit(cur[3], ", ")[[1]][2]
+  header <- getHeader(cur)
   dateTimeSet = strsplit(cur[4], ", ")[[1]][2]
   dateTimeSet = paste(dateTimeSet, ":00", sep = "")
   dateTimeSample = strsplit(cur[5], ", ")[[1]][2]
