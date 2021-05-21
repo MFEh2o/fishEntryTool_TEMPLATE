@@ -188,19 +188,24 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     }
   }
   
-  # check for diets taken and generate a log of diets
-  if("dietSampled"%in%colnames(curData) & any(curData$dietSampled == 1)){
-  if("fishDietsLOG.csv"%in%list.files()){
-   fishDietsLOG = read.csv("fishDietsLOG.csv", header = TRUE, stringsAsFactors = FALSE)
-  }else{
-   fishDietsLOG = data.frame()
-  }
-  
-  fishDietsNEW = data.frame(fishID = paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, curData$fishNum, sep = "_")[curData$dietSample == 1], 
-        lakeID = lakeID[curData$dietSampled == 1], 
-        dateSample = dateSample[curData$dietSampled == 1], 
-        species = species[curData$dietSampled == 1]
-        )
+  # Check for diets taken and generate a log of diets
+  if("dietSampled" %in% names(curData)){
+    if(any(curData$dietSampled == 1)){
+      if("fishDietsLOG.csv" %in% list.files(isdir)){
+        fishDietsLOG <- read.csv(here(isdir, "fishDietsLOG.csv"),
+                                  header = T, stringsAsFactors = F)
+      }else{
+        fishDietsLOG <- data.frame()
+      }
+      fishDietsNEW <- curData %>%
+        filter(dietSampled == 1) %>%
+        select(fishNum, species) %>%
+        mutate(fishID = paste(header$lakeID, header$siteName, dateSampleString,
+                              timeSampleString, header$gear, header$metadataID,
+                              fishNum, sep = "_"),
+               lakeID = header$lakeID,
+               dateSample = header$dateSample)
+    }
   }
 
   # run checks against in-season database and the full database for...
