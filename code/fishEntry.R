@@ -155,7 +155,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
         fishspinesLOG <- read.csv(here(isdir, "fishspinesLOG.csv"),
                                   header = T, stringsAsFactors = F)
       }else{
-        fishSpinesLOG <- data.frame()
+        fishspinesLOG <- data.frame()
       }
       fishspinesNEW <- curData %>%
         filter(spineSample == 1) %>%
@@ -168,20 +168,25 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     }
   }
   
-  # check for scales pulled and generate a log of fish scales
-  if("scaleSample"%in%colnames(curData) & any(curData$scaleSample == 1)){
-  if("fishscalesLOG.csv"%in%list.files()){
-   fishscalesLOG = read.csv("fishscalesLOG.csv", header = TRUE, stringsAsFactors = FALSE)
-  }else{
-   fishscalesLOG = data.frame()
+  # Check for scales pulled and generate a log of fish scales
+  if("scaleSample" %in% names(curData)){
+    if(any(curData$scaleSample == 1)){
+      if("fishscalesLOG.csv" %in% list.files(isdir)){
+        fishscalesLOG <- read.csv(here(isdir, "fishscalesLOG.csv"),
+                                  header = T, stringsAsFactors = F)
+      }else{
+        fishscalesLOG <- data.frame()
+      }
+      fishscalesNEW <- curData %>%
+        filter(scaleSample == 1) %>%
+        select(fishNum, fishLength, fishWeight) %>%
+        mutate(fishID = paste(header$lakeID, header$siteName, dateSampleString,
+                              timeSampleString, header$gear, header$metadataID,
+                              fishNum, sep = "_")) %>%
+        rename("lengthAtCapture" = fishLength,
+               "weightAtCapture" = fishWeight)
+    }
   }
-  
-  
-  fishscalesNEW = data.frame(fishID = paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, curData$fishNum, sep = "_")[curData$scaleSample == 1], 
-         lengthAtCapture = curData$length[curData$scaleSample == 1], 
-         weightAtCapture = curData$weight[curData$scaleSample == 1]
-  )
-  }  
   
   # check for diets taken and generate a log of diets
   if("dietSampled"%in%colnames(curData) & any(curData$dietSampled == 1)){
