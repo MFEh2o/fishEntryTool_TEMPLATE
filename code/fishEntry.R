@@ -67,8 +67,11 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
  }else{
  # There are files to be compiled; generate rows to append
  for(i in 1:length(toCompile)){
+   # Save the file name as a variable `file` for future use
+   file <- toCompile[i]
+   
    # Read in the current file, setting all blank cells to NA
-   cur <- read.csv(here("sampleSheets", toCompile[i]), 
+   cur <- read.csv(here("sampleSheets", file), 
                    na.strings = c("", " ", "NA"), header = F)
    
   # Pull header info
@@ -77,140 +80,86 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
   # Check for NA or empty strings in the header, taking into account whether a value for distanceShocked is expected. Regardless of gear, comments are allowed to be NA.
   checkHeader(header)
  
-  #tabular data
-  curData = data.frame(matrix(unlist(strsplit(cur[(headerRows+1):length(cur)], ", ")), nrow = length(cur)-headerRows, byrow = TRUE), stringsAsFactors = FALSE)
-  colnames(curData) = strsplit(cur[headerRows], ", ")[[1]]
-  curData$fishNum = as.numeric(curData$fishNum)
-  curData$fishLength = as.numeric(curData$fishLength)
-  curData$fishWeight = as.numeric(curData$fishWeight)
+  # Tabular data
+  curData <- getCurData(cur)
  
   #need to be sure that the column names in the entry template are the same as in the database 
   #(change datasheet to match this too); then ones that aren't in curData colnames, get NA and
   #others will match
+  # XXX come back to this.
  
-  #generate date info and date strings for sample and fish IDs
-  dateSet = strftime(strptime(dateTimeSet, format = "%m/%d/%Y %H:%M:%S"), format = "%Y-%m-%d")
-  dateSample = strftime(strptime(dateTimeSample, format = "%m/%d/%Y %H:%M:%S"), format = "%Y-%m-%d")
+  # Get date and time strings for sampleID's and fishID's
+  dateSampleString <- strftime(strptime(header$dateTimeSample, format = "%m/%d/%Y %H:%M:%S"), format = "%Y%m%d")
+  timeSampleString <- strftime(strptime(header$dateTimeSample, format = "%m/%d/%Y %H:%M:%S"), format = "%H%M")
+  # XXX will need lots of checks here, and in the getHeader function too.
+  
+  # Make new rows for FISH_INFO # XXX this can be its own function
+  fishInfoNew <- curData %>%
+    mutate(projectID = header$projectID,
+           metadataID = header$metadataID,
+           sampleID = paste(header$lakeID, header$siteName, dateSampleString,
+                            timeSampleString, header$gear, metadataID, 
+                            sep = "_"),
+           fishNum = as.numeric(fishNum),
+           fishID = paste(sampleID, fishNum, sep = "_"),
+           entryFile = file)
+  
+  # Convert species abbreviations to common names
+  fishInfoNew <- convertSpeciesAbbreviations(x = fishInfoNew, fn = fishNames)
+  
+  # generate FISH_SAMPLES rows # XXX this can be its own function
+  fishSamplesNew <- data.frame(key = names(header),
+                               value = unname(unlist(header))) %>%
+    pivot_wider(names_from = key, values_from = value) %>%
+    mutate(siteID = paste(lakeID, siteName, sep = "_"),
+           sampleID = paste(siteID, dateSampleString, timeSampleString,
+                            gear, metadataID, sep = "_"),
+           dayOfYear = as.numeric(strftime(strptime(dateSample,
+                                                    format = "%Y-%m-%d"),
+                                           format = "%j")),
+           entryFile = file,
+           updateID = NA) %>%
+    select(-siteName)
 
-  dateSampleString = strftime(strptime(dateTimeSample, format = "%m/%d/%Y %H:%M:%S"), format = "%Y%m%d")
-  timeSampleString = strftime(strptime(dateTimeSample, format = "%m/%d/%Y %H:%M:%S"), format = "%H%M")
- 
-  # generate FISH_INFO rows
-  fishInfoNEW = data.frame(projectID = rep(projectID, nrow(curData)), 
-       sampleID = rep(paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, sep = "_"), nrow(curData)), 
-       fishID = paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, curData$fishNum, sep = "_"), 
-       fishNum = if("fishNum"%in%colnames(curData)) as.numeric(curData$fishNum) else NA, 
-       species = if("species"%in%colnames(curData)) curData$species else NA, 
-       fishLength = if("fishLength"%in%colnames(curData)) curData$fishLength else NA, 
-       standardLength = if("standardLength"%in%colnames(curData)) curData$standardLength else NA, 
-       fishWeight = if("fishWeight"%in%colnames(curData)) curData$fishWeight else NA, 
-       caughtBy = if("caughtBy"%in%colnames(curData)) curData$caughtBy else NA, 
-       jumperDescription = if("jumperDescription"%in%colnames(curData)) curData$jumperDescription else NA, 
-       useTagMarkRecap = if("useTagMarkRecap"%in%colnames(curData)) curData$useTagMarkRecap else NA, 
-       tagID = if("tagID"%in%colnames(curData)) curData$tagID else NA, 
-       oldTag = if("oldTag"%in%colnames(curData)) curData$oldTag else NA, 
-       tagApply = if("tagApply"%in%colnames(curData)) curData$tagApply else NA, 
-       tagRecapture = if("tagRecapture"%in%colnames(curData)) curData$tagRecapture else NA, 
-       tagApplyType = if("tagApplyType"%in%colnames(curData)) curData$tagApplyType else NA, 
-       tagRecaptureType = if("tagRecaptureType"%in%colnames(curData)) curData$tagRecaptureType else NA, 
-       clipApply = if("clipApply"%in%colnames(curData)) curData$clipApply else NA, 
-       clipRecapture = if("clipRecapture"%in%colnames(curData)) curData$clipRecapture else NA, 
-       sex = if("sex"%in%colnames(curData)) curData$sex else NA, 
-       mortality = if("mortality"%in%colnames(curData)) curData$mortality else NA, 
-       removed = if("removed"%in%colnames(curData)) curData$removed else NA, 
-       otolithSample = if("otolithSample"%in%colnames(curData)) curData$otolithSample else NA, 
-       tissueSampled = if("tissueSampled"%in%colnames(curData)) curData$tissueSampled else NA, 
-       dietSampled = if("dietSampled"%in%colnames(curData)) curData$dietSampled else NA, 
-       stomachRemoved = if("stomachRemoved"%in%colnames(curData)) curData$stomachRemoved else NA, 
-       gillArchRemoved = if("gillArchRemoved"%in%colnames(curData)) curData$gillArchRemoved else NA, 
-       pectoralFinRemoved = if("pectoralFinRemoved"%in%colnames(curData)) curData$pectoralFinRemoved else NA, 
-       gonadRemoved = if("gonadRemoved"%in%colnames(curData)) curData$gonadRemoved else NA, 
-       leftEyeRemoved = if("leftEyeRemoved"%in%colnames(curData)) curData$leftEyeRemoved else NA, 
-       finClipCollected = if("finClipCollected"%in%colnames(curData)) curData$finClipCollected else NA, 
-       photo = if("photo"%in%colnames(curData)) curData$photo else NA, 
-       gonadWeight = if("gonadWeight"%in%colnames(curData)) curData$gonadWeight else NA, 
-       rectalTemp = if("rectalTemp"%in%colnames(curData)) curData$rectalTemp else NA, 
-       gonadSqueze = if("gonadSqueze"%in%colnames(curData)) curData$gonadSqueze else NA, 
-       sexualStage_MaierScale = if("sexualStage_MaierScale"%in%colnames(curData)) curData$sexualStage_MaierScale else NA, 
-       gpsWaypoint = if("gpsWaypoint"%in%colnames(curData)) curData$gpsWaypoint else NA, 
-       finClipBox = if("finClipBox"%in%colnames(curData)) curData$finClipBox else NA, 
-       spineSample = if("spineSampled"%in%colnames(curData)) curData$spineSampled else NA, 
-       scaleSample = if("scaleSampled"%in%colnames(curData)) curData$scaleSampled else NA, 
-       comments = if("comments"%in%colnames(curData)) curData$comments else NA, 
+  # Check for otoliths pulled and generate a log of fish otoliths
+  if("otolithSample" %in% names(curData)){
+    # If any otoliths were taken
+    if(any(curData$otolithSample == 1)){
+      # Load the log if it exists
+      if("fishOtolithsLOG.csv" %in% list.files(isdir)){
+        fishOtolithsLOG <- read.csv(here(isdir, "fishOtolithsLOG.csv"), 
+                                    header = T, stringsAsFactors = F)
+        # Else, create a log
+      }else{
+        fishOtolithsLOG <- data.frame()
+      }
       
-       entryFile = toCompile[i], 
-       stringsAsFactors = FALSE)
-  
-  # convert species abbreviations to common names
-  if(any(!fishInfoNEW$species%in%fishNames$abbreviation)){
-  if(force_species == FALSE){
-   stop(paste("the species (", unique(fishInfoNEW$species[!fishInfoNEW$species%in%fishNames$abbreviation]), ") is not in the MFE database nor in this season's working database; if you are certain this is the correct species name, use the argument force_species to add it to this season's working database.", sep = ""))
-  }
-  }
-  abbrevs = unique(fishInfoNEW$species)
-  for(j in 1:length(abbrevs)){
-  if(abbrevs[j]%in%c("minnow", "BFN", "RHS", "unidentifiable", "PKL") == T){
-   if(abbrevs[j] == "RHS"){
-   fishInfoNEW$species[fishInfoNEW$species == "RHS"] = "redhorse"
-   }else{
-   if(abbrevs[j] == "unidentifiable"){
-    fishInfoNEW$species[fishInfoNEW$species == "unidentifiable"] = "fish_unidentifiable"
-   }else{
-    if(abbrevs[j] == "PKL"){
-    fishInfoNEW$species[fishInfoNEW$species == "PKL"] = "grass_pickerel"
-    }else{
-    fishInfoNEW$species[fishInfoNEW$species%in%c("minnow", "BFN") == T] = ifelse(fishInfoNEW$species[fishInfoNEW$species%in%c("minnow", "BFN")] == "minnow", "minnow", "bowfin")
+      # Make the data for FISH_OTOLITHS # XXX this can be its own function
+      fishOtolithsNEW <- curData %>%
+        filter(otolithSample == 1) %>%
+        select(fishNum, fishLength, fishWeight) %>%
+        mutate(fishID = paste(header$lakeID, header$siteName, dateSampleString,
+                              timeSampleString, header$gear, header$metadataID,
+                              fishNum, sep = "_"),
+               otolithWeight = NA) %>%
+        rename("lengthAtCapture" = fishLength,
+               "weightAtCapture" = fishWeight)
     }
-   }
-   }
-  }else{
-  fishInfoNEW$species[fishInfoNEW$species == abbrevs[j]] = fishNames$commonName[fishNames$abbreviation == abbrevs[j]]
-  }
-  }
-  
- 
-  # generate FISH_SAMPLES rows
-  fishSamplesNEW = data.frame(siteID = paste(lakeID, siteName, sep = "_"), 
-        sampleID = paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, sep = "_"), 
-        dayOfYear = as.numeric(strftime(strptime(dateSample, format = "%Y-%m-%d"), format = "%j")), 
-        dateSet = dateSet, 
-        dateSample = dateSample, 
-        dateTimeSet = dateTimeSet, 
-        dateTimeSample = dateTimeSample, 
-        crew = crew, 
-        gear = gear, 
-        sampleGroup = sampleGroup, 
-        effort = effort, 
-        effortUnits = effortUnits, 
-        distanceShocked = distanceShocked, 
-        useCPUE = useCPUE, 
-        useSampleMarkRecap = useSampleMarkRecap, 
-        comments = comments, 
-        metadataID = metadataID, 
-        entryFile = toCompile[i], 
-        stringsAsFactors = FALSE)
-
-  # check for otoliths pulled and generate a log of fish otoliths
-  if("otolithSample"%in%colnames(curData) & any(curData$otolithSample == 1)){
-  if("fishOtolithsLOG.csv"%in%list.files()){
-   fishOtolithsLOG = read.csv("fishOtolithsLOG.csv", header = TRUE, stringsAsFactors = FALSE)
-  }else{
-   fishOtolithsLOG = data.frame()
   }
   
   
-  fishOtolithsNEW = data.frame(fishID = paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, curData$fishNum, sep = "_")[curData$otolithSample == 1], 
-         lengthAtCapture = curData$length[curData$otolithSample == 1], 
-         weightAtCapture = curData$weight[curData$otolithSample == 1], 
-         otolithWeight = ""
-         )
-  } 
-  # check for spines pulled and generate a log of fish spines
-  if("spineSample"%in%colnames(curData) & any(curData$spineSample == 1)){
-  if("fishspinesLOG.csv"%in%list.files()){
-   fishspinesLOG = read.csv("fishspinesLOG.csv", header = TRUE, stringsAsFactors = FALSE)
-  }else{
-   fishspinesLOG = data.frame()
+  # Check for spines pulled and generate a log of fish spines
+  if("spineSample" %in% names(curData)){
+    if(any(curData$spineSample == 1)){
+      if("fishspinesLOG.csv" %in% list.files(isdir)){
+        fishspinesLOG <- read.csv(here(isdir, "fishspinesLOG.csv"),
+                                  header = T, stringsAsFactors = F)
+      }else{
+        fishSpinesLOG <- data.frame()
+      }
+      
+      # Make new fish spines rows # XXX START HERE: move the below code for fishspinesNEW up to this if statement.
+    }
   }
   
   
