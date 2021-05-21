@@ -12,6 +12,9 @@ getHeader <- function(d = cur){
     as.list()
   
   header$projectID <- as.numeric(header$projectID)
+  header$dateTimeSet <- paste0(header$dateTimeSet, ":00")
+  header$dateTimeSample <- paste0(header$dateTimeSample, ":00")
+  
   
   # Return the header list
   return(header)
