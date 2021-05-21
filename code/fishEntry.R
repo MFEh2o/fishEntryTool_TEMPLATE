@@ -67,37 +67,15 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
  }else{
  # There are files to be compiled; generate rows to append
  for(i in 1:length(toCompile)){
-   cur <- read.csv(here("sampleSheets", toCompile[i]), na.strings = c("", " ", "NA"), header = F)
+   # Read in the current file, setting all blank cells to NA
+   cur <- read.csv(here("sampleSheets", toCompile[i]), 
+                   na.strings = c("", " ", "NA"), header = F)
    
   # Pull header info
   header <- getHeader(cur)
-  dateTimeSet = strsplit(cur[4], ", ")[[1]][2]
-  dateTimeSet = paste(dateTimeSet, ":00", sep = "")
-  dateTimeSample = strsplit(cur[5], ", ")[[1]][2]
-  dateTimeSample = paste(dateTimeSample, ":00", sep = "")
-  crew = gsub("[\"]", "", cur[6])
-  crew = strsplit(crew, ", ")[[1]]
-  crew = crew[-1];crew = crew[crew! = ""]
-  crew = paste(crew, collapse = ", ")
-  gear = strsplit(cur[7], ", ")[[1]][2]
-  distanceShocked = ifelse(gear == "BE", strsplit(cur[8], ", ")[[1]][2], 0)
-  effort = as.numeric(strsplit(cur[9], ", ")[[1]][2])
-  effortUnits = strsplit(cur[10], ", ")[[1]][2]
-  comments = strsplit(cur[11], ", ")[[1]][2]
-  comments = ifelse(comments == "", NA, comments)
-  useCPUE = strsplit(cur[12], ", ")[[1]][2]
-  dataRecorder = strsplit(cur[13], ", ")[[1]][2]
-  dataEnteredBy = strsplit(cur[14], ", ")[[1]][2]
-  metadataID = strsplit(cur[15], ", ")[[1]][2]
-  useSampleMarkRecap = strsplit(cur[16], ", ")[[1]][2]
-  sampleGroup = strsplit(cur[17], ", ")[[1]][2]
- 
-  # add a check that these are non-empty springs or stop and tell user the header info is incomplete
-  headerVals = c(projectID, lakeID, siteName, dateTimeSet, dateTimeSample, crew, gear, distanceShocked, effort, effortUnits, comments, useCPUE, dataRecorder, dataEnteredBy, metadataID, useSampleMarkRecap, sampleGroup)
-  if(any(headerVals == "", na.rm = TRUE)){
-  headerText = c("projectID", "lakeID", "siteName", "dateTimeSet", "dateTimeSample", "crew", "gear", "distanceShocked", "effort", "effortUnits", "comments", "useCPUE", "dataRecorder", "dataEnteredBy", "metadataID", "useSampleMarkRecap", "sampleGroup")
-  stop(paste("required header information is incomplete; you're missing: ", headerText[headerVals == ""], sep = ", "))
-  }
+
+  # Check for NA or empty strings in the header, taking into account whether a value for distanceShocked is expected. Regardless of gear, comments are allowed to be NA.
+  checkHeader(header)
  
   #tabular data
   curData = data.frame(matrix(unlist(strsplit(cur[(headerRows+1):length(cur)], ", ")), nrow = length(cur)-headerRows, byrow = TRUE), stringsAsFactors = FALSE)
