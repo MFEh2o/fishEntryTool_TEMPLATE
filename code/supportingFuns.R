@@ -29,7 +29,7 @@ getHeader <- function(d = cur){
   header$distanceShocked <- ifelse(header$gear == "BE", header$distanceShocked, NA)
   header$effort <- as.numeric(header$effort)
   # XXX should also enforce constraints on effort units
-
+  
   # Return the header list
   return(header)
 }
@@ -39,29 +39,29 @@ getCurData <- function(d = cur){
   curData <- d[19:nrow(d),] %>% 
     setNames(., d[18,]) %>%
     mutate(across(c("fishNum", "fishLength", "fishWeight"), as.numeric))
-
+  
   return(curData)
 }
 
 # convertSpeciesAbbreviations ---------------------------------------------
 convertSpeciesAbbreviations <- function(x, fn = fishNames){
   assertDataFrame(x)
-  assertChoice("species", names(x))
+  assertChoice("otu", names(x))
   
-  # It's confusing that x$species contains abbreviations. Let's rename it.
+  # It's confusing that x$otu contains abbreviations. Let's rename it.
   x <- x %>%
-    rename("abbreviation" = "species")
+    rename("abbreviation" = "otu")
   
   # Get all abbreviations from fishNames
-  abbrs <- fn$abbreviation
+  abbrsDB <- fn$abbreviation
   
   # Check whether any abbreviations from the data sheet don't show up in OTU (fishNames)
-  if(any(!x$abbreviation %in% abbrs)){
+  if(any(!x$abbreviation %in% abbrsDB)){
     if(force_species == FALSE){
-      stop(paste0("Some species (",
-                 paste(unique(x$abbreviation[!x$abbreviation %in% abbrs]), collapse = ", "),
-                 ") are not in the MFE database nor in this season's working database. If you are certain this is the correct species name, use the force_species argument to add it to this season's working database."))
-    } # XXX this doesn't include the working database because it hasn't been bound on yet. Come back to this--did I misinterpret?
+      stop(paste0("Some species abbreviations (",
+                  paste(unique(x$abbreviation[!x$abbreviation %in% abbrsDB]), collapse = ", "),
+                  ") are not in the OTU table. If you are certain this is the correct abbreviation, use the force_species argument to add it to this season's working database."))
+    } # XXX need to provide an option to enter names instead of abbreviations, or maybe a layered check, where first it checks abbrs and then it checks names if the abbrs fail.
   }
   
   # Join the species names from fn (fishNames) and replace the abbreviations with those names.
@@ -70,13 +70,15 @@ convertSpeciesAbbreviations <- function(x, fn = fishNames){
     left_join(fn %>% 
                 select(commonName, abbreviation),
               by = "abbreviation") %>%
-    rename("species" = "commonName") %>%
-    mutate(species = case_when(is.na(species) & abbreviation == "RHS" ~ "redhorse",
-                               is.na(species) & abbreviation == "unidentifiable" ~ "fish_unidentifiable",
-                               is.na(species) & abbreviation == "PKL" ~ "grass_pickerel",
-                               is.na(species) & abbreviation == "BFN" ~ "bowfin",
-                               TRUE ~ species)) %>%
+    rename("otu" = "commonName") %>%
+    mutate(otu = case_when(is.na(otu) & abbreviation == "RHS" ~ "redhorse",
+                           is.na(otu) & abbreviation == "unidentifiable" ~
+                             "fish_unidentifiable",
+                           is.na(otu) & abbreviation == "PKL" ~ "grass_pickerel",
+                           is.na(otu) & abbreviation == "BFN" ~ "bowfin",
+                           TRUE ~ otu)) %>%
     select(-abbreviation)
+  
   return(x)
 }
 
