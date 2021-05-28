@@ -86,6 +86,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       
       # Tabular data
       curData <- getCurData(cur)
+      if("species" %in% names(curData)){
+        curData <- curData %>%
+          rename("otu" = species)
+      }
       
       #need to be sure that the column names in the entry template are the same as in the database 
       #(change datasheet to match this too); then ones that aren't in curData colnames, get NA and
@@ -93,8 +97,12 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       # XXX come back to this.
       
       # Get date and time strings for sampleID's and fishID's
-      dateSampleString <- strftime(strptime(header$dateTimeSample, format = "%m/%d/%Y %H:%M:%S"), format = "%Y%m%d")
-      timeSampleString <- strftime(strptime(header$dateTimeSample, format = "%m/%d/%Y %H:%M:%S"), format = "%H%M")
+      dateSampleString <- strftime(strptime(header$dateTimeSample, 
+                                            format = "%m/%d/%Y %H:%M:%S"), 
+                                   format = "%Y%m%d")
+      timeSampleString <- strftime(strptime(header$dateTimeSample, 
+                                            format = "%m/%d/%Y %H:%M:%S"), 
+                                   format = "%H%M")
       # XXX will need lots of checks here, and in the getHeader function too.
       
       # Make new rows for FISH_INFO # XXX this can be its own function
@@ -110,10 +118,12 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       
       # Convert species abbreviations to common names
       fishInfoNEW <- convertSpeciesAbbreviations(x = fishInfoNEW, fn = fishNames)
+      
       # Convert the tag columns to match the new format
       ## First, check to make sure all tags are either "pit" or "floy" or force a correction.
       checkTagApply(fishInfoNEW)
       checkTagRecap(fishInfoNEW)
+      checkClips(fishInfoNEW)
       assertAtomic(fishInfoNEW$fishID, unique = TRUE) # make sure all the fishID's are unique
       
       tags <- fishInfoNEW %>% # XXX for now I'm going to assume that oldTag isn't useful and can be removed from the sample sheet. But I'll definitely have to revisit this if it turns out that oldTag is actually used.
@@ -134,9 +144,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       fishInfoNEW <- fishInfoNEW %>%
         select(-c(oldTag, tagApply, tagRecapture, tagApplyType, tagRecaptureType)) %>%
         left_join(tags, by = "fishID")
-      # XXX will need a check for allowable clips
         
-      
       # generate FISH_SAMPLES rows # XXX this can be its own function
       fishSamplesNEW <- data.frame(key = names(header),
                                    value = unname(unlist(header))) %>%
@@ -154,6 +162,14 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                dataEnteredBy = header$dataEnteredBy,
                updateID = header$updateID) %>%
         select(-siteName)
+      
+      # Add nAnglers column based on crew only if effortUnits == angler_hours. 
+      # checkHeader function has already validated crew and effortUnits.
+      fishSamplesNEW <- fishSamplesNEW %>%
+        mutate(nAnglers = case_when(effortUnits == "angler_hours" ~ 
+                                      as.character(length(unlist(strsplit(fishSamplesNEW$crew, split = ", ")))),
+                                    TRUE ~ NA_character_)) %>%
+        relocate(nAnglers, .after = "effortUnits")
       
       # Check for otoliths pulled and generate a log of fish otoliths
       if("otolithSample" %in% names(curData)){
@@ -233,7 +249,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
           }
           fishDietsNEW <- curData %>%
             filter(dietSampled == 1) %>%
-            select(fishNum, species) %>%
+            select(fishNum, otu) %>%
             mutate(fishID = paste(header$lakeID, header$siteName, dateSampleString,
                                   timeSampleString, header$gear, header$metadataID,
                                   fishNum, sep = "_"),
@@ -249,13 +265,16 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                                                            tochar(fishDietsNEW))}
       if(exists("fishOtolithsNEW")){fishOtolithsLOG <- bind_rows(tochar(fishOtolithsLOG), 
                                                                  tochar(fishOtolithsNEW))}
-      if(exists("fishspinesNEW")){fishspinesLOG <- bind_rows(tochar(fishspinesLOG), 
+      if(exists("fishspinesNEW")){fishSpinesLOG <- bind_rows(tochar(fishspinesLOG), 
                                                              tochar(fishspinesNEW))}
-      if(exists("fishscalesNEW")){fishscalesLOG <- bind_rows(tochar(fishscalesLOG), 
+      if(exists("fishscalesNEW")){fishScalesLOG <- bind_rows(tochar(fishscalesLOG), 
                                                              tochar(fishscalesNEW))}
     }
     
     # Run checks --------------------------------------------------------------
+    newLakeIDsCheck(tc = toCompile, db = fishSamplesDB, is = fishSamplesIS, f = force_lakeID)
+    newLakeIDsCheck(tc = toCompile, db = fishInfoDB, is = fishInfoIS, f = force_lakeID)
+    
     
     # write updates to files
     write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 
@@ -270,10 +289,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       write.csv(fishOtolithsLOG, here("inSeason", "fishOtolithsLOG.csv"), 
                 row.names = FALSE)}
     if(exists("fishspinesNEW")){
-      write.csv(fishspinesLOG, here("inSeason", "fishspinesLOG.csv"), 
+      write.csv(fishSpinesLOG, here("inSeason", "fishspinesLOG.csv"), 
                 row.names = FALSE)}
     if(exists("fishscalesNEW")){
-      write.csv(fishscalesLOG, here("inSeason", "fishscalesLOG.csv"), 
+      write.csv(fishScalesLOG, here("inSeason", "fishscalesLOG.csv"), 
                 row.names = FALSE)}
     
   }
