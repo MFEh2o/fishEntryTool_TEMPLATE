@@ -1,6 +1,10 @@
 # Check functions for the fish entry tool
 # Created by Kaija Gahm on 21 May 2021
 
+expectedClips <- c(NA, "LV", "LC", "LP", "UC", "RV", "1", "AF", "UNK")
+expectedEffortUnits <- c("angler_hours", "electrofishing_hours", "meters", "trap_hours", 
+                         NA, "seine_pulls")
+
 # checkHeader function ----------------------------------------------------
 checkHeader <- function(h = header){
   requiredElectro <- h[!names(h) == "comments"]
@@ -8,17 +12,32 @@ checkHeader <- function(h = header){
   
   if(h$gear == "BE"){
     if(any(is.na(requiredElectro)|requiredElectro == "")){
-      paste0("Required header information is incomplete in ", file, 
+      stop(paste0("Required header information is incomplete in ", file, 
              ". You're missing: ", 
              paste(names(requiredElectro[requiredElectro == ""|is.na(requiredElectro)]), 
-                   collapse = ", "))
+                   collapse = ", ")))
     }
   }else{
     if(any(is.na(requiredNonElectro)|requiredNonElectro == "")){
-      paste0("Required header information is incomplete in ", file,
+      stop(paste0("Required header information is incomplete in ", file,
              ". You're missing: ",
              paste(names(requiredNonElectro[requiredNonElectro == ""|is.na(requiredNonElectro)]),
-                   collapse = ", "))
+                   collapse = ", ")))
+    }
+  }
+  
+  # Check that effortUnits is in one of the allowable formats
+  if(!h$effortUnits %in% expectedEffortUnits){
+    stop(paste0("effortUnits must be one of the following values: ", 
+                paste(expectedEffortUnits, collapse = ", ")))
+  }
+  
+  # If effortUnits == 'angler_hours', then we need crew to be in a certain format.
+  if(h$effortUnits == "angler_hours"){
+    if(!grepl("^([A-Za-z]+, )+([A-Za-z]+)$", h$crew)){
+      stop(paste0("Problem with crew information. You entered:\n", 
+                  h$crew,
+                  "\nIn order to calculate nAnglers, crew must be either blank or a list of names or initials, upper/lowercase letters only, separated by commas and spaces. Examples: 'chris, stuart, randi', or 'CTS, SEJ, RN', or 'chris, SEJ, Randi', etc. Please correct your crew data and try again."))
     }
   }
 }
@@ -93,17 +112,60 @@ checkTagRecap <- function(x){
   }
 }
 
-# Checks at the end against the in-season database and full database ----------
+# checkClips --------------------------------------------------------------
+checkClips <- function(x){
+  assertDataFrame(x)
+  assertSubset(c("clipApply", "clipRecapture"), names(x))
+  
+  # Check that all values in clipApply and clipRecapture are included in the vector of expected clip values
+  if(any(!c(x$clipApply, x$clipRecapture) %in% expectedClips)){
+    problemRows <- x %>%
+      filter(!(clipApply %in% expectedClips) | !(clipRecapture %in% expectedClips)) %>%
+      select(fishID, entryFile, clipApply, clipRecapture) %>%
+      distinct()
+    stop(paste0("Found unexpected clipApply and/or clipRecapture values. The offending rows are:\n\n",
+                paste0(capture.output(problemRows), collapse = "\n"),
+                "\n\nYou must correct these clip values in order for the entry tool to run. Allowed clip values are: ", 
+                paste(expectedClips, collapse = ", ")))
+  }
+}
 
-# # lakeID already in database
-# lakeIDsIS <- word(fishSamplesIS$siteID, 1, 1, sep = "_") %>%
-#   unique()
-# if(!header$lakeID %in% c(lakesDB$lakeID, lakeIDsIS)){
-#   if(force_lakeID == FALSE){
-#     stop(paste("your lakeID (", lakeID, ") is not in the MFE database nor in this season's working database; if you are certain this is the correct lakeID, use the argument force_lakeID to add a new lakeID to this season's working database.", sep = ""))
-#   }
-# }
-# 
+# Checks at the end against the in-season database and full database ----------
+# newLakeIDsCheck ---------------------------------------------------------
+newLakeIDsCheck <- function(tc = toCompile, db, is, f = force_lakeID){
+  assertCharacter(tc, pattern = "\\.csv")
+  assertDataFrame(db)
+  assertDataFrame(is)
+  assertLogical(f, len = 1)
+  assertChoice("entryFile", names(is))
+  
+  # Separate just-added data from previous data
+  new <- is %>%
+    filter(entryFile %in% tc) %>%
+    {if(!"lakeID" %in% names(.)) mutate(., lakeID = stringr::word(sampleID, 1, 1, sep = "_")) else .}
+  old <- is %>%
+    filter(!entryFile %in% tc) %>%
+    {if(!"lakeID" %in% names(.)) mutate(., lakeID = stringr::word(sampleID, 1, 1, sep = "_")) else .}
+  db <- db %>%
+    {if(!"lakeID" %in% names(.)) mutate(., lakeID = stringr::word(sampleID, 1, 1, sep = "_")) else .}
+  
+  # Get just the new lakeID's and the files they come from
+  problemRows <- new %>%
+    filter(!lakeID %in% 
+             c(db$lakeID, old$lakeID)) %>%
+    select(lakeID, entryFile) %>%
+    distinct()
+  
+  # If there are new lakeIDs, throw error and print the new lakeIDs
+  if(nrow(problemRows) > 0){
+    if(f == FALSE){
+      stop(paste0("You are attempting to add lakeID's that do not exist in either the MFE databse or the in-season database. Here are the lakeID's, and the files they come from: \n\n",
+                  paste0(capture.output(problemRows), collapse = "\n"),
+                  "\n\n If you are sure these lakeID's are valid, use the force_lakeID argument."))
+    }
+  }
+}
+
 # # siteID already in database
 # if(!fishSamplesNEW$siteID%in%c(fishSamplesIS$siteID, fishSamplesDB$siteID)){
 #   if(force_siteID == FALSE){
