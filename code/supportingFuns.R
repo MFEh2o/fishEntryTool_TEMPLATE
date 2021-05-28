@@ -79,3 +79,14 @@ convertSpeciesAbbreviations <- function(x, fn = fishNames){
     select(-abbreviation)
   return(x)
 }
+
+# tochar ------------------------------------------------------------------
+# shortcut for converting all columns in a data frame to character
+tochar <- function(df){
+  assertDataFrame(df)
+  
+  df2 <- df %>% 
+    mutate(across(everything(), 
+                  as.character))
+  return(df2)
+}
