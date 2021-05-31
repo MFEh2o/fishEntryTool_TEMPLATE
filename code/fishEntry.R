@@ -31,7 +31,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                        force_effortUnits = FALSE, 
                        force_distanceShocked = FALSE, 
                        force_metadataID = FALSE, 
-                       force_projectID = FALSE, 
+                       force_newProjectID = FALSE, 
+                       force_retiredProjectID = FALSE,
                        force_species = FALSE, 
                        force_fishLength = FALSE, 
                        force_fishWeight = FALSE, 
@@ -65,6 +66,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
   toCompile <- list.files(path = here("sampleSheets"), 
                           pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}\\.csv")
   toCompile <- toCompile[!toCompile %in% beenCompiled]
+  
+  # Start saving header information for this round of sheets compiled (so we can run checks at the end)
+  headerDF <- data.frame()
+    
   if(length(toCompile) == 0){
     # No files that have not been compiled into the in-season database
     "The in season database is up to date; no new files to compile"
@@ -104,6 +109,13 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                                             format = "%m/%d/%Y %H:%M:%S"), 
                                    format = "%H%M")
       # XXX will need lots of checks here, and in the getHeader function too.
+      
+      # Add header information to the overall headerDF
+      headerRow <- header %>% unlist() %>% t() %>% as.data.frame()
+      headerRow$entryFile <- file
+      headerRow <- headerRow %>%
+        mutate(sampleID = paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, sep = "_"))
+      headerDF <- bind_rows(headerDF, headerRow)
       
       # Make new rows for FISH_INFO # XXX this can be its own function
       fishInfoNEW <- curData %>%
@@ -201,13 +213,13 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       # Check for spines pulled and generate a log of fish spines
       if("spineSample" %in% names(curData)){
         if(any(curData$spineSample == 1)){
-          if("fishspinesLOG.csv" %in% list.files(isdir)){
-            fishspinesLOG <- read.csv(here(isdir, "fishspinesLOG.csv"),
+          if("fishSpinesLOG.csv" %in% list.files(isdir)){
+            fishSpinesLOG <- read.csv(here(isdir, "fishSpinesLOG.csv"),
                                       header = T, stringsAsFactors = F)
           }else{
-            fishspinesLOG <- data.frame()
+            fishSpinesLOG <- data.frame()
           }
-          fishspinesNEW <- curData %>%
+          fishSpinesNEW <- curData %>%
             filter(spineSample == 1) %>%
             select(fishNum, fishLength, fishWeight) %>%
             mutate(fishID = paste(header$lakeID, header$siteName, dateSampleString,
@@ -221,13 +233,13 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       # Check for scales pulled and generate a log of fish scales
       if("scaleSample" %in% names(curData)){
         if(any(curData$scaleSample == 1)){
-          if("fishscalesLOG.csv" %in% list.files(isdir)){
-            fishscalesLOG <- read.csv(here(isdir, "fishscalesLOG.csv"),
+          if("fishScalesLOG.csv" %in% list.files(isdir)){
+            fishScalesLOG <- read.csv(here(isdir, "fishScalesLOG.csv"),
                                       header = T, stringsAsFactors = F)
           }else{
-            fishscalesLOG <- data.frame()
+            fishScalesLOG <- data.frame()
           }
-          fishscalesNEW <- curData %>%
+          fishScalesNEW <- curData %>%
             filter(scaleSample == 1) %>%
             select(fishNum, fishLength, fishWeight) %>%
             mutate(fishID = paste(header$lakeID, header$siteName, dateSampleString,
@@ -265,10 +277,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                                                            tochar(fishDietsNEW))}
       if(exists("fishOtolithsNEW")){fishOtolithsLOG <- bind_rows(tochar(fishOtolithsLOG), 
                                                                  tochar(fishOtolithsNEW))}
-      if(exists("fishspinesNEW")){fishSpinesLOG <- bind_rows(tochar(fishspinesLOG), 
-                                                             tochar(fishspinesNEW))}
-      if(exists("fishscalesNEW")){fishScalesLOG <- bind_rows(tochar(fishscalesLOG), 
-                                                             tochar(fishscalesNEW))}
+      if(exists("fishSpinesNEW")){fishSpinesLOG <- bind_rows(tochar(fishSpinesLOG), 
+                                                             tochar(fishSpinesNEW))}
+      if(exists("fishScalesNEW")){fishScalesLOG <- bind_rows(tochar(fishScalesLOG), 
+                                                             tochar(fishScalesNEW))}
     }
     
     # Run checks --------------------------------------------------------------
@@ -288,11 +300,11 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     if(exists("fishOtolithsNEW")){
       write.csv(fishOtolithsLOG, here("inSeason", "fishOtolithsLOG.csv"), 
                 row.names = FALSE)}
-    if(exists("fishspinesNEW")){
-      write.csv(fishSpinesLOG, here("inSeason", "fishspinesLOG.csv"), 
+    if(exists("fishSpinesNEW")){
+      write.csv(fishSpinesLOG, here("inSeason", "fishSpinesLOG.csv"), 
                 row.names = FALSE)}
-    if(exists("fishscalesNEW")){
-      write.csv(fishScalesLOG, here("inSeason", "fishscalesLOG.csv"), 
+    if(exists("fishScalesNEW")){
+      write.csv(fishScalesLOG, here("inSeason", "fishScalesLOG.csv"), 
                 row.names = FALSE)}
     
   }
