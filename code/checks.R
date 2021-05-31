@@ -134,12 +134,14 @@ checkClips <- function(x){
 
 # checkForNew -------------------------------------------------------------
 # Check function that can be used to check if you're introducing any new values
-checkForNew <- function(colName, db, is, hdf, f = NULL){
+checkForNew <- function(colName, tc, db, is, hdf, f = NULL){
   # Get values previously used in the database
   dbVals <- db %>% pull({{colName}}) %>% unique()
   
   # Get values previously used in the in-season table
-  isVals <- is %>% pull({{colName}}) %>% unique()
+  isVals <- is %>% 
+    filter(!entryFile %in% tc) %>%
+    pull({{colName}}) %>% unique()
   
   # Put them together
   previousVals <- c(dbVals, isVals)
@@ -168,12 +170,14 @@ checkForNew <- function(colName, db, is, hdf, f = NULL){
 
 # repeatSampleIDsCheck -----------------------------------------------------
 # I didn't bother writing a general function here, because sampleID's are the only thing we check for repeats.
-repeatSampleIDsCheck <- function(fsdb, is, hdf){
+repeatSampleIDsCheck <- function(fsdb, tc, is, hdf){
   # Get sampleID's previously in the database (FISH_SAMPLES)
   dbSampleIDs <- fsdb %>% pull(sampleID) %>% unique()
   
   # Get sampleID's previously in the in-season FISH_SAMPLES file
-  isSampleIDs <- is %>% pull(sampleID) %>% unique()
+  isSampleIDs <- is %>% 
+    filter(!entryFile %in% tc) %>%
+    pull(sampleID) %>% unique()
   
   # Put them together
   previousSampleIDs <- c(dbSampleIDs, isSampleIDs)

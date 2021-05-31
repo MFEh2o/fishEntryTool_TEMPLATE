@@ -289,27 +289,27 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     }
     
     # Run checks --------------------------------------------------------------
-    checkForNew(colName = "lakeID", db = lakesDB, is = fishSamplesIS, 
+    checkForNew(colName = "lakeID", tc = toCompile, db = lakesDB, is = fishSamplesIS, 
                 hdf = headerDF, f = force_lakeID)
-    checkForNew(colName = "siteID", db = sitesDB, is = fishSamplesIS, 
-                hdf = headerDF, f = force_siteID)
-    checkForNew(colName = "gear", db = fishSamplesDB, is = fishSamplesIS,
+    checkForNew(colName = "siteID", tc = toCompile, db = sitesDB, is = fishSamplesIS, 
+                hdf = headerDF, f = force_siteID) # XXX Could maybe have a 'did you mean' option that uses fuzzy matching or similar to find any siteID's that are similar, and suggest them?
+    checkForNew(colName = "gear", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
                 hdf = headerDF, f = force_gear)
-    checkForNew(colName = "sampleGroup", db = fishSamplesDB, is = fishSamplesIS,
+    checkForNew(colName = "sampleGroup", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
                 hdf = headerDF, f = force_sampleGroup)
-    checkForNew(colName = "effortUnits", db = fishSamplesDB, is = fishSamplesIS,
+    checkForNew(colName = "effortUnits", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
                 hdf = headerDF, f = force_effortUnits)
-    checkForNew(colName = "metadataID", db = fishSamplesDB, is = fishSamplesIS,
-                hdf = headerDF, f = force_metadataID)
-    checkForNew(colName = "projectID", db = fishSamplesDB, is = fishSamplesIS,
+    checkForNew(colName = "metadataID", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
+                hdf = headerDF, f = force_metadataID) # XXX Could maybe have a 'did you mean' option that uses fuzzy matching or similar to find any metadataID's that are similar, and suggest them?
+    checkForNew(colName = "projectID", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
                 hdf = headerDF, f = force_newProjectID)
-    checkForNew(colName = "useCPUE", db = fishSamplesDB, is = fishSamplesIS,
+    checkForNew(colName = "useCPUE", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
                 hdf = headerDF) # no force option
-    checkForNew(colName = "useSampleMarkRecap", db = fishSamplesDB, 
+    checkForNew(colName = "useSampleMarkRecap", tc = toCompile, db = fishSamplesDB, 
                 is = fishSamplesIS, hdf = headerDF) # no force option
-    checkForNew(colName = "otu", db = fishInfoDB,
+    checkForNew(colName = "otu", tc = toCompile, db = fishInfoDB,
                 is = fishInfoIS, hdf = fishInfoIS, f = force_species)
-    repeatSampleIDsCheck(fsdb = fishSamplesDB, is = fishSamplesIS,
+    repeatSampleIDsCheck(fsdb = fishSamplesDB, tc = toCompile, is = fishSamplesIS,
                          hdf = headerDF)
     checkDateTimes(hdf = headerDF)
     checkRangeLimits(colName = "doy", hdf = headerDF, f = force_dayOfYear,
