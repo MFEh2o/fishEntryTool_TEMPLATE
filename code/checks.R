@@ -160,33 +160,6 @@ checkForNew <- function(colName, db, is, hdf, f){
   }
 }
 
-# newSiteIDsCheck ---------------------------------------------------------
-newSiteIDsCheck <- function(sdb, is, hdf, f = force_siteID){
-  # Get siteID's previously in the database
-  dbSiteIDs <- sdb %>% pull(siteID) %>% unique()
-  
-  # Get siteID's previously in the in-season FISH_SAMPLES file
-  isSiteIDs <- is %>% pull(siteID) %>% unique()
-  
-  # Put them together
-  previousSiteIDs <- c(dbSiteIDs, isSiteIDs)
-  
-  # Find problem rows in hdf (i.e. that have new siteID's)
-  problemRows <- hdf %>%
-    filter(!siteID %in% previousSiteIDs) %>%
-    select(siteID, entryFile) %>%
-    distinct()
-  
-  # If there are new siteIDs, throw error and print the new siteIDs
-  if(nrow(problemRows) > 0){
-    if(f == FALSE){
-      stop(paste0("You are attempting to add siteID's that do not exist in either the database SITES table or the in-season FISH_SAMPLES file. Here are the siteID's, and the files they come from: \n\n",
-                  paste0(capture.output(problemRows), collapse = "\n"),
-                  "\n\n If you are sure these siteID's are valid, use the force_siteID argument."))
-    }
-  }
-}
-
 # repeatSampleIDsCheck -----------------------------------------------------
 repeatSampleIDsCheck <- function(fsdb, is, hdf){
   # Get sampleID's previously in the database (FISH_SAMPLES)

@@ -42,6 +42,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
   
   # Load tables from database
   lakesDB <- suppressWarnings(dbTable("lakes"))
+  sitesDB <- suppressWarnings(dbTable("sites"))
   fishSamplesDB <- suppressWarnings(dbTable("fish_samples"))
   fishInfoDB <- suppressWarnings(dbTable("fish_info"))
   otu <- suppressWarnings(dbTable("otu"))
@@ -114,7 +115,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       headerRow <- header %>% unlist() %>% t() %>% as.data.frame()
       headerRow$entryFile <- file
       headerRow <- headerRow %>%
-        mutate(sampleID = paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, sep = "_"))
+        mutate(sampleID = paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, sep = "_"),
+               siteID = paste(lakeID, siteName, sep = "_"))
       headerDF <- bind_rows(headerDF, headerRow)
       
       # Make new rows for FISH_INFO # XXX this can be its own function
@@ -286,6 +288,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     # Run checks --------------------------------------------------------------
     checkForNew(colName = "lakeID", db = lakesDB, is = fishSamplesIS, 
                 hdf = headerDF, f = force_lakeID)
+    checkForNew(colName = "siteID", db = sitesDB, is = fishSamplesIS, 
+                hdf = headerDF, f = force_siteID)
     
     # write updates to files
     write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 
