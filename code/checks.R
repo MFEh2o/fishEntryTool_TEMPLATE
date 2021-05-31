@@ -265,58 +265,6 @@ checkDistanceShocked <- function(hdf){
   }
 }
 
-# useCPUECheck --------------------------------------------------------
-useCPUECheck <- function(fsdb, is, hdf){
-  # Get useCPUE values previously in the database
-  dbUseCPUE <- fsdb %>% pull(useCPUE) %>% unique()
-  
-  # Get useCPUE previously in the in-season FISH_SAMPLES file
-  isUseCPUE <- is %>% pull(useCPUE) %>% unique()
-  
-  # Put them together
-  previousUseCPUE <- c(dbUseCPUE, isUseCPUE)
-  
-  # Find problem rows in hdf (i.e. that have new useCPUE)
-  problemRows <- hdf %>%
-    filter(!useCPUE %in% previousUseCPUE) %>%
-    select(useCPUE, entryFile) %>%
-    distinct()
-  
-  # If there are new useCPUE, throw error and print the new useCPUE. No force_ option here.
-  if(nrow(problemRows) > 0){
-      stop(paste0("Some useCPUE values are not acceptable. Here are the offenders: \n\n",
-                  paste0(capture.output(useCPUE), collapse = "\n"),
-                  "\n\nuseCPUE must be one of these values:\n\n",
-                  paste0(previousUseCPUE, collapse = ", ")))
-  }
-}
-
-# useSampleMarkRecapCheck --------------------------------------------------
-useSampleMarkRecapCheck <- function(fsdb, is, hdf){
-  # Get useSampleMarkRecap values previously in the database
-  dbUseSampleMarkRecap <- fsdb %>% pull(useSampleMarkRecap) %>% unique()
-  
-  # Get useSampleMarkRecap previously in the in-season FISH_SAMPLES file
-  isUseSampleMarkRecap <- is %>% pull(useSampleMarkRecap) %>% unique()
-  
-  # Put them together
-  previousUseSampleMarkRecap <- c(dbUseSampleMarkRecap, isUseSampleMarkRecap)
-  
-  # Find problem rows in hdf (i.e. that have new useSampleMarkRecap)
-  problemRows <- hdf %>%
-    filter(!useSampleMarkRecap %in% previousUseSampleMarkRecap) %>%
-    select(useSampleMarkRecap, entryFile) %>%
-    distinct()
-  
-  # If there are new useSampleMarkRecap, throw error and print the new useSampleMarkRecap No force_ option here.
-  if(nrow(problemRows) > 0){
-    stop(paste0("Some useSampleMarkRecap values are not acceptable. Here are the offenders: \n\n",
-                paste0(capture.output(useSampleMarkRecap), collapse = "\n"),
-                "\n\nuseSampleMarkRecap must be one of these values:\n\n",
-                paste0(previousUseSampleMarkRecap, collapse = ", ")))
-  }
-}
-
 # metadataIDCheck --------------------------------------------------------
 metadataIDCheck <- function(fsdb, is, hdf, f = force_metadataID){
   # Get metadataID previously in the database

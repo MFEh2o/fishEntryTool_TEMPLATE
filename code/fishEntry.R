@@ -296,6 +296,11 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                 hdf = headerDF, f = force_sampleGroup)
     checkForNew(colName = "effortUnits", db = fishSamplesDB, is = fishSamplesIS,
                 hdf = headerDF, f = force_effortUnits)
+    checkForNew(colName = "useCPUE", db = fishSamplesDB, is = fishSamplesIS,
+                hdf = headerDF) # no force option
+    checkForNew(colName = "useSampleMarkRecap", db = fishSamplesDB, 
+                is = fishSamplesIS, hdf = headerDF) # no force option
+    
     
     # write updates to files
     write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 
