@@ -309,8 +309,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                 is = fishSamplesIS, hdf = headerDF) # no force option
     checkForNew(colName = "otu", tc = toCompile, db = fishInfoDB,
                 is = fishInfoIS, hdf = fishInfoIS, f = force_species)
-    repeatSampleIDsCheck(fsdb = fishSamplesDB, tc = toCompile, is = fishSamplesIS,
-                         hdf = headerDF)
+    checkForRepeats(colName = "sampleID", tc = toCompile, db = fishSamplesDB, 
+                    is = fishSamplesIS, hdf = headerDF)
     checkDateTimes(hdf = headerDF)
     checkRangeLimits(colName = "doy", hdf = headerDF, f = force_dayOfYear,
                      minVal = 91, maxVal = 305, 

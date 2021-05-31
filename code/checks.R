@@ -197,34 +197,6 @@ checkForRepeats <- function(colName, tc, db, is, hdf){
   }
 }
 
-# repeatSampleIDsCheck -----------------------------------------------------
-# I didn't bother writing a general function here, because sampleID's are the only thing we check for repeats.
-repeatSampleIDsCheck <- function(fsdb, tc, is, hdf){
-  # Get sampleID's previously in the database (FISH_SAMPLES)
-  dbSampleIDs <- fsdb %>% pull(sampleID) %>% unique()
-  
-  # Get sampleID's previously in the in-season FISH_SAMPLES file
-  isSampleIDs <- is %>% 
-    filter(!entryFile %in% tc) %>%
-    pull(sampleID) %>% unique()
-  
-  # Put them together
-  previousSampleIDs <- c(dbSampleIDs, isSampleIDs)
-  
-  # Find problem rows in hdf (i.e. that have repeat sampleID's)
-  problemRows <- hdf %>%
-    filter(sampleID %in% previousSampleIDs) %>%
-    select(sampleID, entryFile) %>%
-    distinct()
-  
-  # If there are repeat sampleIDs, throw error and print the repeat sampleIDs. No option to force_ these.
-  if(nrow(problemRows) > 0){
-    stop(paste0("You are attempting to add sampleID's that already exist in either the database FISH_SAMPLES table or the in-season FISH_SAMPLES file. Here are the sampleID's, and the files they come from: \n\n",
-                paste0(capture.output(problemRows), collapse = "\n"),
-                "\n\n These repeat sampleID's must be corrected before the fish entry tool can run."))
-  }
-}
-
 # checkRangeLimits --------------------------------------------------------
 # Default is to define problem values as anything <= minVal and >= maxVal. If allowMinEqual = T, then only < minVal is a problem; if allowMaxEqual = T, then only > maxVal is a problem.
 checkRangeLimits <- function(colName, hdf, f, minVal, maxVal, 
