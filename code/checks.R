@@ -231,33 +231,6 @@ checkDateTimes <- function(hdf){
 }
 
 
-# sampleGroupCheck --------------------------------------------------------
-sampleGroupCheck <- function(fsdb, is, hdf, f = force_sampleGroup){
-  # Get sampleGroups previously in the database
-  dbSampleGroups <- fsdb %>% pull(sampleGroup) %>% unique()
-  
-  # Get sampleGroups previously in the in-season FISH_SAMPLES file
-  isSampleGroups <- is %>% pull(sampleGroup) %>% unique()
-  
-  # Put them together
-  previousSampleGroups <- c(dbSampleGroups, isSampleGroups)
-  
-  # Find problem rows in hdf (i.e. that have new sampleGroups)
-  problemRows <- hdf %>%
-    filter(!sampleGroup %in% previousSampleGroups) %>%
-    select(sampleGroup, entryFile) %>%
-    distinct()
-  
-  # If there are new sampleGroups, throw error and print the new sampleGroups
-  if(nrow(problemRows) > 0){
-    if(f == FALSE){
-      stop(paste0("You are attempting to add sampleGroups that do not exist in either the database FISH_SAMPLES table or the in-season FISH_SAMPLES file. Here are the sampleGroups, and the files they come from: \n\n",
-                  paste0(capture.output(problemRows), collapse = "\n"),
-                  "\n\n If you are sure these sampleGroups are valid, use the force_sampleGroup argument."))
-    }
-  }
-}
-
 # checkEffort -------------------------------------------------------------
 checkEffort <- function(hdf){
   problemRows <- hdf %>%
