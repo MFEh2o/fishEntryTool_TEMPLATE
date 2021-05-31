@@ -245,33 +245,6 @@ checkEffort <- function(hdf){
   }
 }
 
-# effortUnitsCheck --------------------------------------------------------
-effortUnitsCheck <- function(fsdb, is, hdf, f = force_effortUnits){
-  # Get effortUnits previously in the database
-  dbEffortUnits <- fsdb %>% pull(effortUnits) %>% unique()
-  
-  # Get effortUnits previously in the in-season FISH_SAMPLES file
-  isEffortUnits <- is %>% pull(effortUnits) %>% unique()
-  
-  # Put them together
-  previousEffortUnits <- c(dbEffortUnits, isEffortUnits)
-  
-  # Find problem rows in hdf (i.e. that have new effortUnits)
-  problemRows <- hdf %>%
-    filter(!effortUnits %in% previousEffortUnits) %>%
-    select(effortUnits, entryFile) %>%
-    distinct()
-  
-  # If there are new effortUnits, throw error and print the new effortUnits
-  if(nrow(problemRows) > 0){
-    if(f == FALSE){
-      stop(paste0("You are attempting to add effortUnits that do not exist in either the database FISH_SAMPLES table or the in-season FISH_SAMPLES file. Here are the effortUnits, and the files they come from: \n\n",
-                  paste0(capture.output(effortUnits), collapse = "\n"),
-                  "\n\n If you are sure these effortUnits are valid, use the force_effortUnits argument."))
-    }
-  }
-}
-
 # checkDistanceShocked -----------------------------------------------------
 checkDistanceShocked <- function(hdf){
   problemRows <- hdf %>%
