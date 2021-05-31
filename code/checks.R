@@ -13,16 +13,16 @@ checkHeader <- function(h = header){
   if(h$gear == "BE"){
     if(any(is.na(requiredElectro)|requiredElectro == "")){
       stop(paste0("Required header information is incomplete in ", file, 
-             ". You're missing: ", 
-             paste(names(requiredElectro[requiredElectro == ""|is.na(requiredElectro)]), 
-                   collapse = ", ")))
+                  ". You're missing: ", 
+                  paste(names(requiredElectro[requiredElectro == ""|is.na(requiredElectro)]), 
+                        collapse = ", ")))
     }
   }else{
     if(any(is.na(requiredNonElectro)|requiredNonElectro == "")){
       stop(paste0("Required header information is incomplete in ", file,
-             ". You're missing: ",
-             paste(names(requiredNonElectro[requiredNonElectro == ""|is.na(requiredNonElectro)]),
-                   collapse = ", ")))
+                  ". You're missing: ",
+                  paste(names(requiredNonElectro[requiredNonElectro == ""|is.na(requiredNonElectro)]),
+                        collapse = ", ")))
     }
   }
   
@@ -66,14 +66,14 @@ checkTagApply <- function(x){
                 paste0(capture.output(missingType), collapse = "\n"),
                 "\n\nYou must provide a tag type in order for the entry tool to run."))
   }
-    
-    # Check that all rows that have a tag type also have a tag value
-    missingTag <- x %>%
-      filter(is.na(tagApply), !is.na(tagApplyType))
-    if(nrow(missingTag) > 0){
-      stop(paste0("At least one fish has a tagApplyType but no tag number. The offending rows are:\n\n",
-                  paste0(capture.output(missingTag), collapse = "\n"),
-                  "\n\nYou must provide a tag number in order for the entry tool to run. If the tag was unreadable or you didn't record the tag number, please write 'unknown'."))
+  
+  # Check that all rows that have a tag type also have a tag value
+  missingTag <- x %>%
+    filter(is.na(tagApply), !is.na(tagApplyType))
+  if(nrow(missingTag) > 0){
+    stop(paste0("At least one fish has a tagApplyType but no tag number. The offending rows are:\n\n",
+                paste0(capture.output(missingTag), collapse = "\n"),
+                "\n\nYou must provide a tag number in order for the entry tool to run. If the tag was unreadable or you didn't record the tag number, please write 'unknown'."))
   }
 }
 
@@ -131,129 +131,348 @@ checkClips <- function(x){
 }
 
 # Checks at the end against the in-season database and full database ----------
-# newLakeIDsCheck ---------------------------------------------------------
-newLakeIDsCheck <- function(tc = toCompile, db, is, f = force_lakeID){
-  assertCharacter(tc, pattern = "\\.csv")
-  assertDataFrame(db)
-  assertDataFrame(is)
-  assertLogical(f, len = 1)
-  assertChoice("entryFile", names(is))
+
+# checkForNew -------------------------------------------------------------
+# Check function that can be used to check if you're introducing any new values
+checkForNew <- function(db, is, hdf, f, colName){
+  # Get values previously used in the database
+  dbVals <- db %>% pull({{colName}}) %>% unique()
   
-  # Separate just-added data from previous data
-  new <- is %>%
-    filter(entryFile %in% tc) %>%
-    {if(!"lakeID" %in% names(.)) mutate(., lakeID = stringr::word(sampleID, 1, 1, sep = "_")) else .}
-  old <- is %>%
-    filter(!entryFile %in% tc) %>%
-    {if(!"lakeID" %in% names(.)) mutate(., lakeID = stringr::word(sampleID, 1, 1, sep = "_")) else .}
-  db <- db %>%
-    {if(!"lakeID" %in% names(.)) mutate(., lakeID = stringr::word(sampleID, 1, 1, sep = "_")) else .}
+  # Get values previously used in the in-season table
+  isVals <- is %>% pull({{colName}}) %>% unique()
   
-  # Get just the new lakeID's and the files they come from
-  problemRows <- new %>%
-    filter(!lakeID %in% 
-             c(db$lakeID, old$lakeID)) %>%
-    select(lakeID, entryFile) %>%
+  # Put them together
+  previousVals <- c(dbVals, isVals)
+  
+  # Find problem rows in hdf (i.e. those that have new vals)
+  problemRows <- hdf %>%
+    filter(!{{colName}} %in% previousVals) %>%
+    select({{colName}}, entryFile) %>%
     distinct()
   
-  # If there are new lakeIDs, throw error and print the new lakeIDs
+  # If there are new values, throw an error and print the new values
   if(nrow(problemRows) > 0){
     if(f == FALSE){
-      stop(paste0("You are attempting to add lakeID's that do not exist in either the MFE databse or the in-season database. Here are the lakeID's, and the files they come from: \n\n",
+      stop(paste0("You are attempting to add", colName, " values that do not exist in either the database or the in-season file. Here are the values, and the sample sheets they come from:\n\n",
                   paste0(capture.output(problemRows), collapse = "\n"),
-                  "\n\n If you are sure these lakeID's are valid, use the force_lakeID argument."))
+                  "\n\nIf you are sure that these values are valid, use the", f, " argument."))
+    }
+  }
+  
+}
+
+# newSiteIDsCheck ---------------------------------------------------------
+newSiteIDsCheck <- function(sdb, is, hdf, f = force_siteID){
+  # Get siteID's previously in the database
+  dbSiteIDs <- sdb %>% pull(siteID) %>% unique()
+  
+  # Get siteID's previously in the in-season FISH_SAMPLES file
+  isSiteIDs <- is %>% pull(siteID) %>% unique()
+  
+  # Put them together
+  previousSiteIDs <- c(dbSiteIDs, isSiteIDs)
+  
+  # Find problem rows in hdf (i.e. that have new siteID's)
+  problemRows <- hdf %>%
+    filter(!siteID %in% previousSiteIDs) %>%
+    select(siteID, entryFile) %>%
+    distinct()
+  
+  # If there are new siteIDs, throw error and print the new siteIDs
+  if(nrow(problemRows) > 0){
+    if(f == FALSE){
+      stop(paste0("You are attempting to add siteID's that do not exist in either the database SITES table or the in-season FISH_SAMPLES file. Here are the siteID's, and the files they come from: \n\n",
+                  paste0(capture.output(problemRows), collapse = "\n"),
+                  "\n\n If you are sure these siteID's are valid, use the force_siteID argument."))
     }
   }
 }
 
-# # siteID already in database
-# if(!fishSamplesNEW$siteID%in%c(fishSamplesIS$siteID, fishSamplesDB$siteID)){
-#   if(force_siteID == FALSE){
-#     stop(paste("your siteID (", fishSamplesNEW$siteID, ") is not in the MFE database nor in this season's working database; if you are certain this is the correct siteID, use the argument force_siteID to add a new siteID to this season's working database.", sep = ""))
-#   }
-# }
-# 
-# # sampleID NOT already in database
-# if(fishSamplesNEW$sampleID%in%c(fishSamplesIS$sampleID, fishSamplesDB$sampleID)){
-#   stop(paste("your sampleID (", fishSamplesNEW$sampleID, ") is already in the MFE database or in this season's working database!", sep = ""))
-# }
-# 
-# # dayOfYear in an acceptable range
-# if(fishSamplesNEW$dayOfYear<91 | fishSamplesNEW$dayOfYear>305){
-#   if(force_dayOfYear == FALSE){
-#     stop(paste("your dayOfYear (", fishSamplesNEW$dayOfYear, ") is not in the usual range; if your dayOfYear is correct use the argument force_dayOfYear", sep = ""))
-#   }
-# }
-# 
-# #dateSet must be the same or earlier than dateSample?
-# if(as.Date(dateSample)<as.Date(dateSet)){
-#   stop("Your dateSample is < your dateSet!")
-# }
-# 
-# #dateTimeSet must be the same or earlier than dateTimeSample?
-# if(strptime(dateTimeSample, format = "%m/%d/%Y %H:%M:%S")<strptime(dateTimeSet, format = "%m/%d/%Y %H:%M:%S")){
-#   stop("Your dateTimeSample is < your dateTimeSet!")
-# }
-# 
-# # gear already in database
-# if(!fishSamplesNEW$gear%in%c(fishSamplesIS$gear, fishSamplesDB$gear)){
-#   if(force_gear == FALSE){
-#     stop(paste("your gear (", fishSamplesNEW$gear, ") is not in the MFE database nor in this season's working database; if you are certain this is the correct gear, use the argument force_gear to add a new gear to this season's working database.", sep = ""))
-#   }
-# }
-# 
-# # sampleGroup already in database????
-# if(!fishSamplesNEW$sampleGroup%in%c(fishSamplesIS$sampleGroup, fishSamplesDB$sampleGroup)){
-#   if(force_sampleGroup == FALSE){
-#     stop(paste("your sampleGroup (", fishSamplesNEW$sampleGroup, ") is not in the MFE database nor in this season's working database; if you are certain this is the correct sampleGroup, use the argument force_sampleGroup to add a new sampleGroup to this season's working database.", sep = ""))
-#   }
-# }
-# 
-# # effort in an acceptable range
-# if(fishSamplesNEW$effort< = 0 | fishSamplesNEW$effort>24){
-#   if(force_effort == FALSE){
-#     stop(paste("your effort (", fishSamplesNew$effort, ") is outside the normal range; if you are certain this is the correct effort use the argument force_effort."))
-#   }
-# }
-# 
-# # effortUnits already in database????
-# if(!fishSamplesNEW$effortUnits%in%c(fishSamplesIS$effortUnits, fishSamplesDB$effortUnits)){
-#   if(force_effortUnits == FALSE){
-#     stop(paste("your effortUnits (", fishSamplesNEW$effortUnits, ") is not in the MFE database nor in this season's working database; if you are certain this is the correct effortUnits, use the argument force_effortUnits to add a new effortUnits to this season's working database.", sep = ""))
-#   }
-# }
-# 
-# # distanceShocked in an acceptable range
-# if(fishSamplesNEW$distanceShocked<0 | fishSamplesNEW$distanceShocked>25){
-#   if(force_distanceShocked == FALSE){
-#     stop(paste("your distanceShocked (", fishSamplesNEW$effortUnits, ") is outside the normal range; if you are certain this is the correct distanceShocked use the argument force_distanceShocked."))
-#   }
-# }
-# 
-# # useCPUE already in database????
-# if(!fishSamplesNEW$useCPUE%in%c(fishSamplesIS$useCPUE, fishSamplesDB$useCPUE)){
-#   stop(paste("your useCPUE (", fishSamplesNEW$useCPUE, ") is not an acceptable value", sep = ""))
-# }
-# 
-# # useSampleMarkRecap already in database????
-# if(!fishSamplesNEW$useSampleMarkRecap%in%c(fishSamplesIS$useSampleMarkRecap, fishSamplesDB$useSampleMarkRecap)){
-#   stop(paste("your useSampleMarkRecap (", fishSamplesNEW$useSampleMarkRecap, ") is not an acceptable value", sep = ""))
-# }
-# 
-# # metadataID already in database
-# if(!fishSamplesNEW$metadataID%in%c(fishSamplesIS$metadataID, fishSamplesDB$metadataID)){
-#   if(force_metadataID == FALSE){
-#     stop(paste("your metadataID (", fishSamplesNEW$metadataID, ") is not in the MFE database nor in this season's working database; if you are certain this is the correct metadataID, use the argument force_metadataID to add a new metadataID to this season's working database.", sep = ""))
-#   }
-# }
-# 
-# # projectID already in database
-# if(!fishInfoNEW$projectID[1]%in%c(fishInfoIS$projectID, fishInfoDB$projectID)){
-#   if(force_projectID == FALSE){
-#     stop(paste("your projectID (", fishInfoNEW$projectID[1], ") is not in the MFE database nor in this season's working database; if you are certain this is the correct projectID, use the argument force_projectID to add a new projectID to this season's working database.", sep = ""))
-#   }
-# }
-# 
+# repeatSampleIDsCheck -----------------------------------------------------
+repeatSampleIDsCheck <- function(fsdb, is, hdf){
+  # Get sampleID's previously in the database (FISH_SAMPLES)
+  dbSampleIDs <- fsdb %>% pull(sampleID) %>% unique()
+  
+  # Get sampleID's previously in the in-season FISH_SAMPLES file
+  isSampleIDs <- is %>% pull(sampleID) %>% unique()
+  
+  # Put them together
+  previousSampleIDs <- c(dbSampleIDs, isSampleIDs)
+  
+  # Find problem rows in hdf (i.e. that have repeat sampleID's)
+  problemRows <- hdf %>%
+    filter(sampleID %in% previousSampleIDs) %>%
+    select(sampleID, entryFile) %>%
+    distinct()
+  
+  # If there are repeat sampleIDs, throw error and print the repeat sampleIDs. No option to force_ these.
+  if(nrow(problemRows) > 0){
+    stop(paste0("You are attempting to add sampleID's that already exist in either the database FISH_SAMPLES table or the in-season FISH_SAMPLES file. Here are the sampleID's, and the files they come from: \n\n",
+                paste0(capture.output(problemRows), collapse = "\n"),
+                "\n\n These repeat sampleID's must be corrected before the fish entry tool can run."))
+  }
+}
+
+# checkDOY ----------------------------------------------------------------
+checkDOY <- function(hdf, f){
+  # Compute dayOfYear for headerDF
+  hdf$doy <- as.numeric(strftime(strptime(hdf$dateSample,
+                                          format = "%Y-%m-%d"),
+                                 format = "%j"))
+  
+  # Grab any that have dates outside the normal range
+  problemRows <- hdf %>%
+    filter(doy < 91|doy > 305)
+  
+  # Throw an error if any dates are outside the normal range
+  if(nrow(problemRows) > 0){
+    if(f == FALSE){
+      stop(paste("Some dayOfYear entries are outside the usual range. The offending dates are:\n\n", 
+                 paste0(capture.output(problemRows), collapse = "\n"),
+                 "\n\nIf you are sure these dates are correct, use the force_dayOfYear = T argument."))
+    }
+  }
+}
+
+# checkDateTimes ----------------------------------------------------------
+checkDateTimes <- function(hdf){
+  # dateSet must be the same or earlier than dateSample
+  problemRowsDate <- hdf %>%
+    filter(as.Date(dateSample) < as.Date(dateSet))
+  
+  # dateTimeSet must be the same or earlier than dateTimeSample
+  problemRowsDateTime <- hdf %>%
+    filter(strptime(dateTimeSample, 
+                    format = "%m/%d%Y %H:%M:%S") < 
+             strptime(dateTimeSet, 
+                      format = "%m/%d%Y %H:%M:%S"))
+  
+  # Error message for dateSet/dateSample
+  if(nrow(problemRowsDate) > 0){
+    stop("In the following sample sheets, the dateSample is earlier than the dateSet:\n\n", paste0(capture.output(problemRowsDate), collapse = "\n"))
+  }
+  
+  # Error message for dateTimeSet/dateTimeSample
+  if(nrow(problemRowsDateTime) > 0){
+    stop("In the following sample sheets, the dateTimeSample is earlier than the dateTimeSet:\n\n", paste0(capture.output(problemRowsDateTime), collapse = "\n"))
+  }
+}
+
+# gearCheck ---------------------------------------------------------------
+gearCheck <- function(fsdb, is, hdf, f = force_gear){
+  # Get gear previously in the database
+  dbGear <- fsdb %>% pull(gear) %>% unique()
+  
+  # Get gear previously in the in-season FISH_SAMPLES file
+  isGear <- is %>% pull(gear) %>% unique()
+  
+  # Put them together
+  previousGear <- c(dbGear, isGear)
+  
+  # Find problem rows in hdf (i.e. that have new gear types)
+  problemRows <- hdf %>%
+    filter(!gear %in% previousGear) %>%
+    select(gear, entryFile) %>%
+    distinct()
+  
+  # If there are new gear types, throw error and print the new gear types
+  if(nrow(problemRows) > 0){
+    if(f == FALSE){
+      stop(paste0("You are attempting to add gear types that do not exist in either the database FISH_SAMPLES table or the in-season FISH_SAMPLES file. Here are the gear types, and the files they come from: \n\n",
+                  paste0(capture.output(problemRows), collapse = "\n"),
+                  "\n\n If you are sure these gear types are valid, use the force_gear argument."))
+    }
+  }
+}
+
+# sampleGroupCheck --------------------------------------------------------
+sampleGroupCheck <- function(fsdb, is, hdf, f = force_sampleGroup){
+  # Get sampleGroups previously in the database
+  dbSampleGroups <- fsdb %>% pull(sampleGroup) %>% unique()
+  
+  # Get sampleGroups previously in the in-season FISH_SAMPLES file
+  isSampleGroups <- is %>% pull(sampleGroup) %>% unique()
+  
+  # Put them together
+  previousSampleGroups <- c(dbSampleGroups, isSampleGroups)
+  
+  # Find problem rows in hdf (i.e. that have new sampleGroups)
+  problemRows <- hdf %>%
+    filter(!sampleGroup %in% previousSampleGroups) %>%
+    select(sampleGroup, entryFile) %>%
+    distinct()
+  
+  # If there are new sampleGroups, throw error and print the new sampleGroups
+  if(nrow(problemRows) > 0){
+    if(f == FALSE){
+      stop(paste0("You are attempting to add sampleGroups that do not exist in either the database FISH_SAMPLES table or the in-season FISH_SAMPLES file. Here are the sampleGroups, and the files they come from: \n\n",
+                  paste0(capture.output(problemRows), collapse = "\n"),
+                  "\n\n If you are sure these sampleGroups are valid, use the force_sampleGroup argument."))
+    }
+  }
+}
+
+# checkEffort -------------------------------------------------------------
+checkEffort <- function(hdf){
+  problemRows <- hdf %>%
+    filter(effort <= 0 | effort > 24)
+  
+  if(nrow(problemRows) > 0){
+    if(force_effort == FALSE){
+      stop(paste("Effort is outside the normal range for the following sample sheets:\n\n",
+                 paste0(capture.output(problemRows), collapse = "\n"),
+                 "\n\nIf you are certain this is the correct effort, use force_effort = T."))
+    }
+  }
+}
+
+# effortUnitsCheck --------------------------------------------------------
+effortUnitsCheck <- function(fsdb, is, hdf, f = force_effortUnits){
+  # Get effortUnits previously in the database
+  dbEffortUnits <- fsdb %>% pull(effortUnits) %>% unique()
+  
+  # Get effortUnits previously in the in-season FISH_SAMPLES file
+  isEffortUnits <- is %>% pull(effortUnits) %>% unique()
+  
+  # Put them together
+  previousEffortUnits <- c(dbEffortUnits, isEffortUnits)
+  
+  # Find problem rows in hdf (i.e. that have new effortUnits)
+  problemRows <- hdf %>%
+    filter(!effortUnits %in% previousEffortUnits) %>%
+    select(effortUnits, entryFile) %>%
+    distinct()
+  
+  # If there are new effortUnits, throw error and print the new effortUnits
+  if(nrow(problemRows) > 0){
+    if(f == FALSE){
+      stop(paste0("You are attempting to add effortUnits that do not exist in either the database FISH_SAMPLES table or the in-season FISH_SAMPLES file. Here are the effortUnits, and the files they come from: \n\n",
+                  paste0(capture.output(effortUnits), collapse = "\n"),
+                  "\n\n If you are sure these effortUnits are valid, use the force_effortUnits argument."))
+    }
+  }
+}
+
+# checkDistanceShocked -----------------------------------------------------
+checkDistanceShocked <- function(hdf){
+  problemRows <- hdf %>%
+    filter(distanceShocked < 0 | distanceShocked > 25)
+  
+  if(nrow(problemRows) > 0){
+    if(force_distanceShocked == FALSE){
+      stop(paste("DistanceShocked is outside the normal range for the following sample sheets:\n\n",
+                 paste0(capture.output(problemRows), collapse = "\n"),
+                 "\n\nIf you are certain this is the correct distanceShocked, use force_distanceShocked = T."))
+    }
+  }
+}
+
+# useCPUECheck --------------------------------------------------------
+useCPUECheck <- function(fsdb, is, hdf){
+  # Get useCPUE values previously in the database
+  dbUseCPUE <- fsdb %>% pull(useCPUE) %>% unique()
+  
+  # Get useCPUE previously in the in-season FISH_SAMPLES file
+  isUseCPUE <- is %>% pull(useCPUE) %>% unique()
+  
+  # Put them together
+  previousUseCPUE <- c(dbUseCPUE, isUseCPUE)
+  
+  # Find problem rows in hdf (i.e. that have new useCPUE)
+  problemRows <- hdf %>%
+    filter(!useCPUE %in% previousUseCPUE) %>%
+    select(useCPUE, entryFile) %>%
+    distinct()
+  
+  # If there are new useCPUE, throw error and print the new useCPUE. No force_ option here.
+  if(nrow(problemRows) > 0){
+      stop(paste0("Some useCPUE values are not acceptable. Here are the offenders: \n\n",
+                  paste0(capture.output(useCPUE), collapse = "\n"),
+                  "\n\nuseCPUE must be one of these values:\n\n",
+                  paste0(previousUseCPUE, collapse = ", ")))
+  }
+}
+
+# useSampleMarkRecapCheck --------------------------------------------------
+useSampleMarkRecapCheck <- function(fsdb, is, hdf){
+  # Get useSampleMarkRecap values previously in the database
+  dbUseSampleMarkRecap <- fsdb %>% pull(useSampleMarkRecap) %>% unique()
+  
+  # Get useSampleMarkRecap previously in the in-season FISH_SAMPLES file
+  isUseSampleMarkRecap <- is %>% pull(useSampleMarkRecap) %>% unique()
+  
+  # Put them together
+  previousUseSampleMarkRecap <- c(dbUseSampleMarkRecap, isUseSampleMarkRecap)
+  
+  # Find problem rows in hdf (i.e. that have new useSampleMarkRecap)
+  problemRows <- hdf %>%
+    filter(!useSampleMarkRecap %in% previousUseSampleMarkRecap) %>%
+    select(useSampleMarkRecap, entryFile) %>%
+    distinct()
+  
+  # If there are new useSampleMarkRecap, throw error and print the new useSampleMarkRecap No force_ option here.
+  if(nrow(problemRows) > 0){
+    stop(paste0("Some useSampleMarkRecap values are not acceptable. Here are the offenders: \n\n",
+                paste0(capture.output(useSampleMarkRecap), collapse = "\n"),
+                "\n\nuseSampleMarkRecap must be one of these values:\n\n",
+                paste0(previousUseSampleMarkRecap, collapse = ", ")))
+  }
+}
+
+# metadataIDCheck --------------------------------------------------------
+metadataIDCheck <- function(fsdb, is, hdf, f = force_metadataID){
+  # Get metadataID previously in the database
+  dbMetadataID <- fsdb %>% pull(metadataID) %>% unique()
+  
+  # Get metadataID previously in the in-season FISH_SAMPLES file
+  isMetadataID <- is %>% pull(metadataID) %>% unique()
+  
+  # Put them together
+  previousMetadataID <- c(dbMetadataID, isMetadataID)
+  
+  # Find problem rows in hdf (i.e. that have new metadataID)
+  problemRows <- hdf %>%
+    filter(!metadataID %in% previousMetadataID) %>%
+    select(metadataID, entryFile) %>%
+    distinct()
+  
+  # If there are new metadataID's, throw error and print the new metadataID's
+  if(nrow(problemRows) > 0){
+    if(f == FALSE){
+      stop(paste0("You are attempting to add metadataID's that do not exist in either the database FISH_SAMPLES table or the in-season FISH_SAMPLES file. Here are the metadataID's, and the files they come from: \n\n",
+                  paste0(capture.output(problemRows), collapse = "\n"),
+                  "\n\n If you are sure these metadataID's are valid, use the force_metadataID argument."))
+    }
+  }
+}
+
+# newProjectIDCheck --------------------------------------------------------
+newProjectIDCheck <- function(fsdb, is, hdf, f = force_newProjectID){
+  # Get projectIDs previously in the database
+  dbProjectID <- fsdb %>% pull(projectID) %>% unique()
+  
+  # Get projectIDs previously in the in-season FISH_SAMPLES file
+  isProjectID <- is %>% pull(projectID) %>% unique()
+  
+  # Put them together
+  previousProjectIDs <- c(dbProjectID, isProjectID)
+  
+  # Find problem rows in hdf (i.e. that have new projectID)
+  problemRows <- hdf %>%
+    filter(!projectID %in% previousProjectIDs) %>%
+    select(projectID, entryFile) %>%
+    distinct()
+  
+  # If there are new projectID's, throw error and print the new projectID's
+  if(nrow(problemRows) > 0){
+    if(f == FALSE){
+      stop(paste0("You are attempting to add projectID's that do not exist in either the database FISH_SAMPLES table or the in-season FISH_SAMPLES file. Here are the projectID's, and the files they come from: \n\n",
+                  paste0(capture.output(problemRows), collapse = "\n"),
+                  "\n\n If you are sure these projectID's are valid, use the force_newProjectID argument."))
+    }
+  }
+}
+
 # # species names
 # if(any(!fishInfoNEW$species%in%c(fishInfoIS$species, fishInfoDB$species))){
 #   if(force_species == FALSE){
