@@ -230,32 +230,6 @@ checkDateTimes <- function(hdf){
   }
 }
 
-# gearCheck ---------------------------------------------------------------
-gearCheck <- function(fsdb, is, hdf, f = force_gear){
-  # Get gear previously in the database
-  dbGear <- fsdb %>% pull(gear) %>% unique()
-  
-  # Get gear previously in the in-season FISH_SAMPLES file
-  isGear <- is %>% pull(gear) %>% unique()
-  
-  # Put them together
-  previousGear <- c(dbGear, isGear)
-  
-  # Find problem rows in hdf (i.e. that have new gear types)
-  problemRows <- hdf %>%
-    filter(!gear %in% previousGear) %>%
-    select(gear, entryFile) %>%
-    distinct()
-  
-  # If there are new gear types, throw error and print the new gear types
-  if(nrow(problemRows) > 0){
-    if(f == FALSE){
-      stop(paste0("You are attempting to add gear types that do not exist in either the database FISH_SAMPLES table or the in-season FISH_SAMPLES file. Here are the gear types, and the files they come from: \n\n",
-                  paste0(capture.output(problemRows), collapse = "\n"),
-                  "\n\n If you are sure these gear types are valid, use the force_gear argument."))
-    }
-  }
-}
 
 # sampleGroupCheck --------------------------------------------------------
 sampleGroupCheck <- function(fsdb, is, hdf, f = force_sampleGroup){

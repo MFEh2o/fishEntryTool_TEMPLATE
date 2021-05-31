@@ -290,6 +290,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                 hdf = headerDF, f = force_lakeID)
     checkForNew(colName = "siteID", db = sitesDB, is = fishSamplesIS, 
                 hdf = headerDF, f = force_siteID)
+    checkForNew(colName = "gear", db = fishSamplesDB, is = fishSamplesIS,
+                hdf = headerDF, f = force_gear)
     
     # write updates to files
     write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 
