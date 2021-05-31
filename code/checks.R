@@ -242,20 +242,6 @@ checkDateTimes <- function(hdf){
 }
 
 
-# checkEffort -------------------------------------------------------------
-checkEffort <- function(hdf){
-  problemRows <- hdf %>%
-    filter(effort <= 0 | effort > 24)
-  
-  if(nrow(problemRows) > 0){
-    if(force_effort == FALSE){
-      stop(paste("Effort is outside the normal range for the following sample sheets:\n\n",
-                 paste0(capture.output(problemRows), collapse = "\n"),
-                 "\n\nIf you are certain this is the correct effort, use force_effort = T."))
-    }
-  }
-}
-
 # metadataIDCheck --------------------------------------------------------
 metadataIDCheck <- function(fsdb, is, hdf, f = force_metadataID){
   # Get metadataID previously in the database
