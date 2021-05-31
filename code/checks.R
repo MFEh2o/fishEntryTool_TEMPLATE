@@ -168,6 +168,35 @@ checkForNew <- function(colName, tc, db, is, hdf, f = NULL){
   }
 }
 
+
+# checkForRepeats ---------------------------------------------------------
+# Check function to make sure you're not introducing any repeat values.
+checkForRepeats <- function(colName, tc, db, is, hdf){
+  # Get values previously used in the database
+  dbVals <- db %>% pull({{colName}}) %>% unique()
+  
+  # Get values previously used in the in-season table
+  isVals <- is %>% 
+    filter(!entryFile %in% tc) %>%
+    pull({{colName}}) %>% unique()
+  
+  # Put them together
+  previousVals <- c(dbVals, isVals)
+  
+  # Find problem rows in hdf (i.e. those that match a previous value)
+  problemRows <- hdf %>%
+    filter(.data[[colName]] %in% previousVals) %>%
+    select({{colName}}, entryFile) %>%
+    distinct()
+  
+  # If there are repeat values, throw an error and print the repeat values
+  if(nrow(problemRows) > 0){
+      stop(paste0("You are attempting to add ", colName, " values that are already in either the database or the in-season file. Here are the repeat values, and the sample sheets they come from:\n\n",
+                  paste0(capture.output(problemRows), collapse = "\n"),
+                  "\n\nFor the fish entry tool to work, all of your ", colName, " values must be unique.:\n\n"))
+  }
+}
+
 # repeatSampleIDsCheck -----------------------------------------------------
 # I didn't bother writing a general function here, because sampleID's are the only thing we check for repeats.
 repeatSampleIDsCheck <- function(fsdb, tc, is, hdf){
