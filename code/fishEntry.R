@@ -301,6 +301,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                 hdf = headerDF, f = force_effortUnits)
     checkForNew(colName = "metadataID", db = fishSamplesDB, is = fishSamplesIS,
                 hdf = headerDF, f = force_metadataID)
+    checkForNew(colName = "projectID", db = fishSamplesDB, is = fishSamplesIS,
+                hdf = headerDF, f = force_newProjectID)
     checkForNew(colName = "useCPUE", db = fishSamplesDB, is = fishSamplesIS,
                 hdf = headerDF) # no force option
     checkForNew(colName = "useSampleMarkRecap", db = fishSamplesDB, 

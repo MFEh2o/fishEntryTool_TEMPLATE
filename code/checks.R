@@ -241,33 +241,6 @@ checkDateTimes <- function(hdf){
   }
 }
 
-# newProjectIDCheck --------------------------------------------------------
-newProjectIDCheck <- function(fsdb, is, hdf, f = force_newProjectID){
-  # Get projectIDs previously in the database
-  dbProjectID <- fsdb %>% pull(projectID) %>% unique()
-  
-  # Get projectIDs previously in the in-season FISH_SAMPLES file
-  isProjectID <- is %>% pull(projectID) %>% unique()
-  
-  # Put them together
-  previousProjectIDs <- c(dbProjectID, isProjectID)
-  
-  # Find problem rows in hdf (i.e. that have new projectID)
-  problemRows <- hdf %>%
-    filter(!projectID %in% previousProjectIDs) %>%
-    select(projectID, entryFile) %>%
-    distinct()
-  
-  # If there are new projectID's, throw error and print the new projectID's
-  if(nrow(problemRows) > 0){
-    if(f == FALSE){
-      stop(paste0("You are attempting to add projectID's that do not exist in either the database FISH_SAMPLES table or the in-season FISH_SAMPLES file. Here are the projectID's, and the files they come from: \n\n",
-                  paste0(capture.output(problemRows), collapse = "\n"),
-                  "\n\n If you are sure these projectID's are valid, use the force_newProjectID argument."))
-    }
-  }
-}
-
 # # species names
 # if(any(!fishInfoNEW$species%in%c(fishInfoIS$species, fishInfoDB$species))){
 #   if(force_species == FALSE){
