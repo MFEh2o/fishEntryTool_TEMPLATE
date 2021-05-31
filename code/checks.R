@@ -241,34 +241,6 @@ checkDateTimes <- function(hdf){
   }
 }
 
-
-# metadataIDCheck --------------------------------------------------------
-metadataIDCheck <- function(fsdb, is, hdf, f = force_metadataID){
-  # Get metadataID previously in the database
-  dbMetadataID <- fsdb %>% pull(metadataID) %>% unique()
-  
-  # Get metadataID previously in the in-season FISH_SAMPLES file
-  isMetadataID <- is %>% pull(metadataID) %>% unique()
-  
-  # Put them together
-  previousMetadataID <- c(dbMetadataID, isMetadataID)
-  
-  # Find problem rows in hdf (i.e. that have new metadataID)
-  problemRows <- hdf %>%
-    filter(!metadataID %in% previousMetadataID) %>%
-    select(metadataID, entryFile) %>%
-    distinct()
-  
-  # If there are new metadataID's, throw error and print the new metadataID's
-  if(nrow(problemRows) > 0){
-    if(f == FALSE){
-      stop(paste0("You are attempting to add metadataID's that do not exist in either the database FISH_SAMPLES table or the in-season FISH_SAMPLES file. Here are the metadataID's, and the files they come from: \n\n",
-                  paste0(capture.output(problemRows), collapse = "\n"),
-                  "\n\n If you are sure these metadataID's are valid, use the force_metadataID argument."))
-    }
-  }
-}
-
 # newProjectIDCheck --------------------------------------------------------
 newProjectIDCheck <- function(fsdb, is, hdf, f = force_newProjectID){
   # Get projectIDs previously in the database
