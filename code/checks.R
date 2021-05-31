@@ -241,13 +241,6 @@ checkDateTimes <- function(hdf){
   }
 }
 
-# # species names
-# if(any(!fishInfoNEW$species%in%c(fishInfoIS$species, fishInfoDB$species))){
-#   if(force_species == FALSE){
-#     stop(paste("the species (", unique(fishInfoNEW$species[!fishInfoNEW$species%in%c(fishInfoIS$species, fishInfoDB$species)]), ") is not in the MFE database nor in this season's working database; if you are certain this is the correct species name, use the argument force_species to add it to this season's working database.", sep = ""))
-#   }
-# }
-# 
 # # fish number check for duplicates
 # if(any(duplicated(fishInfoNEW$fishNum))){
 #   stop("You have duplicate fish numbers and therefore duplicate fishIDs!")

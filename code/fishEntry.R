@@ -307,6 +307,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                 hdf = headerDF) # no force option
     checkForNew(colName = "useSampleMarkRecap", db = fishSamplesDB, 
                 is = fishSamplesIS, hdf = headerDF) # no force option
+    checkForNew(colName = "otu", db = fishInfoDB,
+                is = fishInfoIS, hdf = fishInfoIS, f = force_species)
     repeatSampleIDsCheck(fsdb = fishSamplesDB, is = fishSamplesIS,
                          hdf = headerDF)
     checkDateTimes(hdf = headerDF)
