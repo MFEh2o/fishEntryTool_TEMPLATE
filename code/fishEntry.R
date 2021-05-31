@@ -116,7 +116,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       headerRow$entryFile <- file
       headerRow <- headerRow %>%
         mutate(sampleID = paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, sep = "_"),
-               siteID = paste(lakeID, siteName, sep = "_"))
+               siteID = paste(lakeID, siteName, sep = "_"),
+               doy = as.numeric(strftime(strptime(dateSample,
+                                                   format = "%Y-%m-%d"),
+                                          format = "%j")))
       headerDF <- bind_rows(headerDF, headerRow)
       
       # Make new rows for FISH_INFO # XXX this can be its own function
@@ -303,6 +306,9 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     repeatSampleIDsCheck(fsdb = fishSamplesDB, is = fishSamplesIS,
                          hdf = headerDF)
     checkDateTimes(hdf = headerDF)
+    checkRangeLimits(colName == "doy", hdf = headerDF, f = force_dayOfYear,
+                     minVal = 91, maxVal = 305, 
+                     allowMinEqual = F, allowMaxEqual = F)
     
     # write updates to files
     write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 

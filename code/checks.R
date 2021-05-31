@@ -192,23 +192,27 @@ repeatSampleIDsCheck <- function(fsdb, is, hdf){
   }
 }
 
-# checkDOY ----------------------------------------------------------------
-checkDOY <- function(hdf, f){
-  # Compute dayOfYear for headerDF
-  hdf$doy <- as.numeric(strftime(strptime(hdf$dateSample,
-                                          format = "%Y-%m-%d"),
-                                 format = "%j"))
-  
-  # Grab any that have dates outside the normal range
+# checkRangeLimits --------------------------------------------------------
+# Default is to check that value is > minVal and < maxVal. If allowMinEqual = T, then that changes to >= minVal; if allowMaxEqual = T, then that changes to <= maxVal.
+checkRangeLimits <- function(colName, hdf, f, minVal, maxVal, 
+                             allowMinEqual = F, allowMaxEqual = F){
   problemRows <- hdf %>%
-    filter(doy < 91|doy > 305)
+    {if(allowMinEqual){
+      filter(., {{colName}} >= minVal)
+    }else{
+      filter(., {{colName}} > minVal)}
+    } %>%
+    {if(allowMaxEqual){
+      filter(., {{colName}} <= maxVal)
+    }else{
+      filter(., {{colName}} < maxVal)}
+    }
   
-  # Throw an error if any dates are outside the normal range
   if(nrow(problemRows) > 0){
     if(f == FALSE){
-      stop(paste("Some dayOfYear entries are outside the usual range. The offending dates are:\n\n", 
+      stop(paste("Some ", colName, " values are outside the normal range of ", minVal, " to ", maxVal, ". The offending values are:\n\n",
                  paste0(capture.output(problemRows), collapse = "\n"),
-                 "\n\nIf you are sure these dates are correct, use the force_dayOfYear = T argument."))
+                 "If you are sure that these values are correct, use the ", f, " argument."))
     }
   }
 }
