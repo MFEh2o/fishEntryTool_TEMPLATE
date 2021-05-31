@@ -309,6 +309,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     checkRangeLimits(colName == "doy", hdf = headerDF, f = force_dayOfYear,
                      minVal = 91, maxVal = 305, 
                      allowMinEqual = F, allowMaxEqual = F)
+    checkRangeLimits(colName == "distanceShocked", hdf = headerDF, 
+                     f = force_distanceShocked,
+                     minVal = 0, maxVal = 25,
+                     allowMinEqual = F, allowMaxEqual = F)
     
     # write updates to files
     write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 

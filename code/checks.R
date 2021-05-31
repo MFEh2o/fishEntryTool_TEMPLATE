@@ -193,19 +193,19 @@ repeatSampleIDsCheck <- function(fsdb, is, hdf){
 }
 
 # checkRangeLimits --------------------------------------------------------
-# Default is to check that value is > minVal and < maxVal. If allowMinEqual = T, then that changes to >= minVal; if allowMaxEqual = T, then that changes to <= maxVal.
+# Default is to define problem values as anything <= minVal and >= maxVal. If allowMinEqual = T, then only < minVal is a problem; if allowMaxEqual = T, then only > maxVal is a problem.
 checkRangeLimits <- function(colName, hdf, f, minVal, maxVal, 
                              allowMinEqual = F, allowMaxEqual = F){
   problemRows <- hdf %>%
     {if(allowMinEqual){
-      filter(., {{colName}} >= minVal)
+      filter(., {{colName}} < minVal)
     }else{
-      filter(., {{colName}} > minVal)}
+      filter(., {{colName}} <= minVal)}
     } %>%
     {if(allowMaxEqual){
-      filter(., {{colName}} <= maxVal)
+      filter(., {{colName}} > maxVal)
     }else{
-      filter(., {{colName}} < maxVal)}
+      filter(., {{colName}} >= maxVal)}
     }
   
   if(nrow(problemRows) > 0){
@@ -252,20 +252,6 @@ checkEffort <- function(hdf){
       stop(paste("Effort is outside the normal range for the following sample sheets:\n\n",
                  paste0(capture.output(problemRows), collapse = "\n"),
                  "\n\nIf you are certain this is the correct effort, use force_effort = T."))
-    }
-  }
-}
-
-# checkDistanceShocked -----------------------------------------------------
-checkDistanceShocked <- function(hdf){
-  problemRows <- hdf %>%
-    filter(distanceShocked < 0 | distanceShocked > 25)
-  
-  if(nrow(problemRows) > 0){
-    if(force_distanceShocked == FALSE){
-      stop(paste("DistanceShocked is outside the normal range for the following sample sheets:\n\n",
-                 paste0(capture.output(problemRows), collapse = "\n"),
-                 "\n\nIf you are certain this is the correct distanceShocked, use force_distanceShocked = T."))
     }
   }
 }
