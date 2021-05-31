@@ -134,7 +134,7 @@ checkClips <- function(x){
 
 # checkForNew -------------------------------------------------------------
 # Check function that can be used to check if you're introducing any new values
-checkForNew <- function(db, is, hdf, f, colName){
+checkForNew <- function(colName, db, is, hdf, f){
   # Get values previously used in the database
   dbVals <- db %>% pull({{colName}}) %>% unique()
   
@@ -146,19 +146,18 @@ checkForNew <- function(db, is, hdf, f, colName){
   
   # Find problem rows in hdf (i.e. those that have new vals)
   problemRows <- hdf %>%
-    filter(!{{colName}} %in% previousVals) %>%
+    filter(!.data[[colName]] %in% previousVals) %>%
     select({{colName}}, entryFile) %>%
     distinct()
   
   # If there are new values, throw an error and print the new values
   if(nrow(problemRows) > 0){
     if(f == FALSE){
-      stop(paste0("You are attempting to add", colName, " values that do not exist in either the database or the in-season file. Here are the values, and the sample sheets they come from:\n\n",
+      stop(paste0("You are attempting to add ", colName, " values that do not exist in either the database or the in-season file. Here are the values, and the sample sheets they come from:\n\n",
                   paste0(capture.output(problemRows), collapse = "\n"),
                   "\n\nIf you are sure that these values are valid, use the", f, " argument."))
     }
   }
-  
 }
 
 # newSiteIDsCheck ---------------------------------------------------------

@@ -284,9 +284,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     }
     
     # Run checks --------------------------------------------------------------
-    newLakeIDsCheck(tc = toCompile, db = fishSamplesDB, is = fishSamplesIS, f = force_lakeID)
-    newLakeIDsCheck(tc = toCompile, db = fishInfoDB, is = fishInfoIS, f = force_lakeID)
-    
+    checkForNew(colName = "lakeID", db = lakesDB, is = fishSamplesIS, 
+                hdf = headerDF, f = force_lakeID)
     
     # write updates to files
     write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 
