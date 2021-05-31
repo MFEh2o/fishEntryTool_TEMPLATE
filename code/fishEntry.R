@@ -300,7 +300,9 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                 hdf = headerDF) # no force option
     checkForNew(colName = "useSampleMarkRecap", db = fishSamplesDB, 
                 is = fishSamplesIS, hdf = headerDF) # no force option
-    
+    repeatSampleIDsCheck(fsdb = fishSamplesDB, is = fishSamplesIS,
+                         hdf = headerDF)
+    checkDateTimes(hdf = headerDF)
     
     # write updates to files
     write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 

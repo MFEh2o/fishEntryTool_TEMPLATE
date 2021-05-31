@@ -167,6 +167,7 @@ checkForNew <- function(colName, db, is, hdf, f = NULL){
 }
 
 # repeatSampleIDsCheck -----------------------------------------------------
+# I didn't bother writing a general function here, because sampleID's are the only thing we check for repeats.
 repeatSampleIDsCheck <- function(fsdb, is, hdf){
   # Get sampleID's previously in the database (FISH_SAMPLES)
   dbSampleIDs <- fsdb %>% pull(sampleID) %>% unique()
