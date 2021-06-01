@@ -3,7 +3,7 @@
 # Last updated by Kaija Gahm, May 2021
 
 # Show full text of errors and warnings
-options(warning.length = 3000L, error.length = 3000L)
+options(warning.length = 6000L, error.length = 6000L)
 
 # Load packages -----------------------------------------------------------
 library(tidyverse)
@@ -311,6 +311,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                 is = fishInfoIS, hdf = fishInfoIS, f = force_species)
     checkForRepeats(colName = "sampleID", tc = toCompile, db = fishSamplesDB, 
                     is = fishSamplesIS, hdf = headerDF)
+    checkDuplicateFishIDs(is = fishInfoIS, db = fishInfoDB, tc = toCompile)
     checkDateTimes(hdf = headerDF)
     checkRangeLimits(colName = "doy", hdf = headerDF, f = force_dayOfYear,
                      minVal = 91, maxVal = 305, 
