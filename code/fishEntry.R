@@ -140,7 +140,6 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       ## First, check to make sure all tags are either "pit" or "floy" or force a correction.
       checkTagApply(fishInfoNEW)
       checkTagRecap(fishInfoNEW)
-      checkClips(fishInfoNEW)
       assertAtomic(fishInfoNEW$fishID, unique = TRUE) # make sure all the fishID's are unique
       
       tags <- fishInfoNEW %>% # XXX for now I'm going to assume that oldTag isn't useful and can be removed from the sample sheet. But I'll definitely have to revisit this if it turns out that oldTag is actually used.

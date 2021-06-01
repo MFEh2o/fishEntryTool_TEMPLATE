@@ -1,7 +1,6 @@
 # Check functions for the fish entry tool
 # Created by Kaija Gahm on 21 May 2021
 
-expectedClips <- c(NA, "LV", "LC", "LP", "UC", "RV", "1", "AF", "UNK")
 expectedEffortUnits <- c("angler_hours", "electrofishing_hours", "meters", "trap_hours", 
                          NA, "seine_pulls")
 
@@ -109,24 +108,6 @@ checkTagRecap <- function(x){
     stop(paste0("At least one fish has a tagRecaptureType but no tag number. The offending rows are:\n\n",
                 paste0(capture.output(missingTag), collapse = "\n"),
                 "\n\nYou must provide a tag number in order for the entry tool to run. If the tag was unreadable or you didn't record the tag number, please write 'unknown'."))
-  }
-}
-
-# checkClips --------------------------------------------------------------
-checkClips <- function(x){
-  assertDataFrame(x)
-  assertSubset(c("clipApply", "clipRecapture"), names(x))
-  
-  # Check that all values in clipApply and clipRecapture are included in the vector of expected clip values
-  if(any(!c(x$clipApply, x$clipRecapture) %in% expectedClips)){
-    problemRows <- x %>%
-      filter(!(clipApply %in% expectedClips) | !(clipRecapture %in% expectedClips)) %>%
-      select(fishID, entryFile, clipApply, clipRecapture) %>%
-      distinct()
-    stop(paste0("Found unexpected clipApply and/or clipRecapture values. The offending rows are:\n\n",
-                paste0(capture.output(problemRows), collapse = "\n"),
-                "\n\nYou must correct these clip values in order for the entry tool to run. Allowed clip values are: ", 
-                paste(expectedClips, collapse = ", ")))
   }
 }
 
