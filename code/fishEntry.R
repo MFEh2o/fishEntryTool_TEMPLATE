@@ -37,7 +37,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                        force_fishLength = FALSE, 
                        force_fishWeight = FALSE, 
                        force_clipApply = FALSE,
-                       force_clipRecapture = FALSE){
+                       force_clipRecapture = FALSE,
+                       force_clipLake = FALSE,
+                       force_pitApply = FALSE,
+                       force_floyApply = FALSE){
   
   source(file.path(funcdir, "dbUtil.R")) # load the dbUtil functions
   
@@ -318,6 +321,12 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                           fl = force_fishLength, fw = force_fishWeight)
     checkForNew(colName = "clipApply", tc = toCompile, db = fishInfoDB, 
                 is = fishInfoIS, f = force_clipApply)
+    checkForNew(colName = "clipRecapture", tc = toCompile, db = fishInfoDB,
+                is = fishInfoIS, f = force_clipRecapture)
+    checkForRepeats(colName = "pitApply", tc = toCompile, db = fishInfoDB,
+                    is = fishInfoIS, na.ok = T, f = force_pitApply)
+    checkForRepeats(colName = "floyApply", tc = toCompile, db = fishInfoDB,
+                    is = fishInfoIS, na.ok = T, f = force_floyApply)
 
     # write updates to files
     write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 

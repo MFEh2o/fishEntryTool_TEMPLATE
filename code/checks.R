@@ -154,10 +154,9 @@ checkForNew <- function(colName, tc, db, is, f = NULL){
   }
 }
 
-
 # checkForRepeats ---------------------------------------------------------
 # Check function to make sure you're not introducing any repeat values.
-checkForRepeats <- function(colName, tc, db, is){
+checkForRepeats <- function(colName, tc, db, is, na.ok = F, f = NULL){
   # Get values previously used in the database
   dbVals <- db %>% pull({{colName}}) %>% unique()
   
@@ -175,15 +174,22 @@ checkForRepeats <- function(colName, tc, db, is){
   
   # Find problem rows in newData (i.e. those that match/repeat a previous value)
   problemRows <- newData %>%
+    {if(na.ok == T) filter(., !is.na(.data[[colName]])) else .} %>%
     filter(.data[[colName]] %in% previousVals) %>%
     select({{colName}}, entryFile) %>%
     distinct()
   
   # If there are repeat values, throw an error and print the repeat values
   if(nrow(problemRows) > 0){
-    stop(paste0("You are attempting to add ", colName, " values that are already in either the database or the in-season file. Here are the repeat values, and the sample sheets they come from:\n\n",
-                paste0(capture.output(problemRows), collapse = "\n"),
-                "\n\nFor the fish entry tool to work, all of your ", colName, " values must be unique.:\n\n"))
+    if(is.null(f)){
+      stop(paste0("You are attempting to add ", colName, " values that are already in either the database or the in-season file. Here are the repeat values, and the sample sheets they come from:\n\n",
+                  paste0(capture.output(problemRows), collapse = "\n"),
+                  "\n\nFor the fish entry tool to work, all of your ", colName, " values must be unique."))
+    }else{
+      stop(paste0("You are attempting to add ", colName, " values that are already in either the database or the in-season file. Here are the repeat values, and the sample sheets they come from:\n\n",
+                  paste0(capture.output(problemRows), collapse = "\n"),
+                  "\n\nIf you are sure you're entering the right values, you can use ", deparse(substitute(f)), " to bypass this message and enter the values anyway. But BEWARE! Tell the database manager. The database may not compile correctly if it includes repeat values."))
+    }
   }
 }
 
@@ -384,7 +390,34 @@ checkFishLengthWeight <- function(db, tc, is, fl, fw){
   })
 }
 
-# checkClips --------------------------------------------------------------
+# clipLakeCheck --------------------------------------------------------------
+clipLakeCheck <- function(tc, db, is, f){
+  # Get new data that has clipRecapture values and split by lake
+  # add a lakeID column
+  newData <- is %>%
+    filter(entryFile %in% tc,
+           !is.na(clipRecapture)) %>%
+    mutate(lakeID = word(sampleID, 1, 1, sep = "_"))
+  
+  # get an alphabetical list of lakes
+  lakes <- newData %>% arrange(lakeID) %>% pull(lakeID) %>% unique()
+  
+  # arrange the recaptures by lake
+  recapturesByLake <- newData %>%
+    arrange(lakeID) %>% group_by(lakeID) %>% group_split() %>%
+    setNames(., lakes)
+  
+  # pull out all the past values of clipApply by lake
+  pastClipValues <- db %>%
+    mutate(lakeID = word(sampleID, 1, 1, sep = "_")) %>%
+    arrange(lakeID) %>% group_by(lakeID) %>% group_split() %>%
+    lapply(., function(x) x %>%
+             filter(!is.na(clipApply)) %>%
+             pull(clipApply) %>% unique())
+  
+  # For each lake, check whether the current clipRecapture values have been applied in the past.
+  map2(.x = recapturesByLake, ) # XXX START HERE--there has to be a better way to do this! yoikes.
+}
 
 
 # 
@@ -411,33 +444,7 @@ checkFishLengthWeight <- function(db, tc, is, fl, fw){
 #     }
 #   }
 # }
-# 
-# #tagApply today conflicts with tagApply from previous
-# #* check in this lake and other lakes...
-# # print conflicting fishInfo rows
-# # attempt to fix based on sequential tags, but probably not
-# # most likely remove the previous tagApply -- but are we sure that today's is right and not the previous apply?
-# # change data sheet too!?!?!?
-# tagsApplied = curNEW$tagApply[!is.na(curNEW$tagApply)]
-# tagsApplied = curNEW$tagApply[curNEW$tagApply! = ""]
-# if(length(tagsApplied)>0){
-#   if(any(tagsApplied%in%c(fishInfoDB$tagApply, fishInfoIS$tagApply), na.rm = TRUE)){
-#     for(j in 1:length(tagsApplied)){
-#       if(tagsApplied[j]%in%fishInfoDB$tagApply){
-#         tagApplyStop = TRUE
-#         temp = rbind(fishInfoDB[fishInfoDB$tagApply == tagsApplied[j], c(1:8, 12:19, 38:39)], curNEW[curNEW$tagApply == tagsApplied[j], c(1:8, 12:19, 38, 41)])
-#         print(temp)
-#       }
-#       if(tagsApplied[i]%in%fishInfoIS$tagApply){
-#         tagApplyStop = TRUE
-#         temp = rbind(fishInfoIS[fishInfoIS$tagApply == tagsApplied[j], c(1:8, 12:19, 38:39)], curNEW[curNEW$tagApply == tagsApplied[j], c(1:8, 12:19, 38, 41)])
-#         print(temp)
-#       }
-#     }
-#     stop("You are attempting to enter a tagApply that was already recorded as a tagApply in the database or in-season database.")
-#   }
-# }
-# 
+
 # # -tagRecap should have an apply in the database from that lake at some point in the past
 # # the absence of a previous apply might mean it was entered wrong
 # # make this the tag apply -> change data sheet too!?!?!
