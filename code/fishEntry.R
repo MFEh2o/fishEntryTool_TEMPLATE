@@ -307,7 +307,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     checkForNew(colName = "useSampleMarkRecap", tc = toCompile, db = fishSamplesDB, 
                 is = fishSamplesIS, hdf = headerDF) # no force option
     checkForNew(colName = "otu", tc = toCompile, db = fishInfoDB,
-                is = fishInfoIS, hdf = fishInfoIS, f = force_species)
+                is = fishInfoIS, hdf = fishInfoIS, f = force_species) # XXX I DON'T KNOW HOW I FEEL ABOUT THIS USE OF THIS FUNCTION, with hdf = fishInfoIS
     checkForRepeats(colName = "sampleID", tc = toCompile, db = fishSamplesDB, 
                     is = fishSamplesIS, hdf = headerDF)
     checkDuplicateFishIDs(is = fishInfoIS, db = fishInfoDB, tc = toCompile)
@@ -325,7 +325,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                      allowMinEqual = T, allowMaxEqual = F)
     checkFishLengthWeight(db = fishInfoDB, tc = toCompile, is = fishInfoIS, 
                           fl = force_fishLength, fw = force_fishWeight)
-    
+    # XXX can we adapt checkForNew so that it explicitly doesn't require hdf (headerDF)? If so, can we adapt that for clipApply and clipRecapture, too?
+
     # write updates to files
     write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 
               row.names = FALSE)

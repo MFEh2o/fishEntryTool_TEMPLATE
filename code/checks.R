@@ -367,6 +367,9 @@ checkFishLengthWeight <- function(db, tc, is, fl, fw){
   })
 }
 
+# checkClips --------------------------------------------------------------
+
+
 # 
 # ### tag marks and recaps --> figure what the common prefixes are and distinguish errors in prefix vs. individual number?
 # 
