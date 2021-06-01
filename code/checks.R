@@ -115,11 +115,15 @@ checkTagRecap <- function(x){
 
 # checkForNew -------------------------------------------------------------
 # Check function that can be used to check if you're introducing any new values
-checkForNew <- function(colName, tc, db, is, hdf, f = NULL){
+checkForNew <- function(colName, tc, db, is, f = NULL){
   # Get values previously used in the database
   dbVals <- db %>% pull({{colName}}) %>% unique()
   
-  # Get values previously used in the in-season table
+  # Separate out the new data
+  newData <- is %>%
+    filter(entryFile %in% tc)
+  
+  # Get values previously used in the in-season table (but not including the current entry)
   isVals <- is %>% 
     filter(!entryFile %in% tc) %>%
     pull({{colName}}) %>% unique()
@@ -127,8 +131,8 @@ checkForNew <- function(colName, tc, db, is, hdf, f = NULL){
   # Put them together
   previousVals <- c(dbVals, isVals)
   
-  # Find problem rows in hdf (i.e. those that have new vals)
-  problemRows <- hdf %>%
+  # Find problem rows in newData (i.e. those that have new vals)
+  problemRows <- newData %>%
     filter(!.data[[colName]] %in% previousVals) %>%
     select({{colName}}, entryFile) %>%
     distinct()
@@ -153,7 +157,7 @@ checkForNew <- function(colName, tc, db, is, hdf, f = NULL){
 
 # checkForRepeats ---------------------------------------------------------
 # Check function to make sure you're not introducing any repeat values.
-checkForRepeats <- function(colName, tc, db, is, hdf){
+checkForRepeats <- function(colName, tc, db, is){
   # Get values previously used in the database
   dbVals <- db %>% pull({{colName}}) %>% unique()
   
@@ -162,28 +166,37 @@ checkForRepeats <- function(colName, tc, db, is, hdf){
     filter(!entryFile %in% tc) %>%
     pull({{colName}}) %>% unique()
   
+  # Get new data
+  newData <- is %>%
+    filter(entryFile %in% tc)
+  
   # Put them together
   previousVals <- c(dbVals, isVals)
   
-  # Find problem rows in hdf (i.e. those that match a previous value)
-  problemRows <- hdf %>%
+  # Find problem rows in newData (i.e. those that match/repeat a previous value)
+  problemRows <- newData %>%
     filter(.data[[colName]] %in% previousVals) %>%
     select({{colName}}, entryFile) %>%
     distinct()
   
   # If there are repeat values, throw an error and print the repeat values
   if(nrow(problemRows) > 0){
-      stop(paste0("You are attempting to add ", colName, " values that are already in either the database or the in-season file. Here are the repeat values, and the sample sheets they come from:\n\n",
-                  paste0(capture.output(problemRows), collapse = "\n"),
-                  "\n\nFor the fish entry tool to work, all of your ", colName, " values must be unique.:\n\n"))
+    stop(paste0("You are attempting to add ", colName, " values that are already in either the database or the in-season file. Here are the repeat values, and the sample sheets they come from:\n\n",
+                paste0(capture.output(problemRows), collapse = "\n"),
+                "\n\nFor the fish entry tool to work, all of your ", colName, " values must be unique.:\n\n"))
   }
 }
 
 # checkRangeLimits --------------------------------------------------------
 # Default is to define problem values as anything <= minVal and >= maxVal. If allowMinEqual = T, then only < minVal is a problem; if allowMaxEqual = T, then only > maxVal is a problem.
-checkRangeLimits <- function(colName, hdf, f, minVal, maxVal, 
+checkRangeLimits <- function(colName, is, tc, f, minVal, maxVal, 
                              allowMinEqual = F, allowMaxEqual = F){
-  problemRows <- hdf %>%
+  # Get new data
+  newData <- is %>%
+    filter(entryFile %in% tc)
+  
+  # Isolate problem rows
+  problemRows <- newData %>%
     {if(allowMinEqual){
       filter(., {{colName}} < minVal)
     }else{
@@ -205,13 +218,17 @@ checkRangeLimits <- function(colName, hdf, f, minVal, maxVal,
 }
 
 # checkDateTimes ----------------------------------------------------------
-checkDateTimes <- function(hdf){
+checkDateTimes <- function(is, tc){
+  # Get new data
+  newData <- is %>%
+    filter(entryFile %in% tc)
+  
   # dateSet must be the same or earlier than dateSample
-  problemRowsDate <- hdf %>%
+  problemRowsDate <- newData %>%
     filter(as.Date(dateSample) < as.Date(dateSet))
   
   # dateTimeSet must be the same or earlier than dateTimeSample
-  problemRowsDateTime <- hdf %>%
+  problemRowsDateTime <- newData %>%
     filter(strptime(dateTimeSample, 
                     format = "%m/%d%Y %H:%M:%S") < 
              strptime(dateTimeSet, 

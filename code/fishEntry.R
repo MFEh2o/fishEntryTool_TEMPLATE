@@ -36,7 +36,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                        force_species = FALSE, 
                        force_fishLength = FALSE, 
                        force_fishWeight = FALSE, 
-                       force_clip = FALSE){
+                       force_clipApply = FALSE,
+                       force_clipRecapture = FALSE){
   
   source(file.path(funcdir, "dbUtil.R")) # load the dbUtil functions
   
@@ -67,9 +68,6 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
   toCompile <- list.files(path = here("sampleSheets"), 
                           pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}\\.csv")
   toCompile <- toCompile[!toCompile %in% beenCompiled]
-  
-  # Start saving header information for this round of sheets compiled (so we can run checks at the end)
-  # headerDF <- data.frame()
     
   if(length(toCompile) == 0){
     # No files that have not been compiled into the in-season database
@@ -110,17 +108,6 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                                             format = "%m/%d/%Y %H:%M:%S"), 
                                    format = "%H%M")
       # XXX will need lots of checks here, and in the getHeader function too.
-      
-      # # Add header information to the overall headerDF
-      # headerRow <- header %>% unlist() %>% t() %>% as.data.frame()
-      # headerRow$entryFile <- file
-      # headerRow <- headerRow %>%
-      #   mutate(sampleID = paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, sep = "_"),
-      #          siteID = paste(lakeID, siteName, sep = "_"),
-      #          doy = as.numeric(strftime(strptime(dateSample,
-      #                                              format = "%Y-%m-%d"),
-      #                                     format = "%j")))
-      # headerDF <- bind_rows(headerDF, headerRow)
       
       # Make new rows for FISH_INFO # XXX this can be its own function
       fishInfoNEW <- curData %>%
@@ -288,44 +275,49 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     }
     
     # Run checks --------------------------------------------------------------
-    checkForNew(colName = "lakeID", tc = toCompile, db = lakesDB, is = fishSamplesIS, 
-                hdf = headerDF, f = force_lakeID)
+    # XXX sort checks by which data frame (fish samples, fish info) they're checking
+    checkForNew(colName = "lakeID", tc = toCompile, db = lakesDB, 
+                is = fishSamplesIS, 
+                f = force_lakeID)
     checkForNew(colName = "siteID", tc = toCompile, db = sitesDB, is = fishSamplesIS, 
-                hdf = headerDF, f = force_siteID) # XXX Could maybe have a 'did you mean' option that uses fuzzy matching or similar to find any siteID's that are similar, and suggest them?
+                f = force_siteID) # XXX Could maybe have a 'did you mean' option that uses fuzzy matching or similar to find any siteID's that are similar, and suggest them?
     checkForNew(colName = "gear", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
-                hdf = headerDF, f = force_gear)
+                f = force_gear)
     checkForNew(colName = "sampleGroup", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
-                hdf = headerDF, f = force_sampleGroup)
+                f = force_sampleGroup)
     checkForNew(colName = "effortUnits", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
-                hdf = headerDF, f = force_effortUnits)
+                f = force_effortUnits)
     checkForNew(colName = "metadataID", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
-                hdf = headerDF, f = force_metadataID) # XXX Could maybe have a 'did you mean' option that uses fuzzy matching or similar to find any metadataID's that are similar, and suggest them?
+                f = force_metadataID) # XXX Could maybe have a 'did you mean' option that uses fuzzy matching or similar to find any metadataID's that are similar, and suggest them?
     checkForNew(colName = "projectID", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
-                hdf = headerDF, f = force_newProjectID)
-    checkForNew(colName = "useCPUE", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
-                hdf = headerDF) # no force option
+                f = force_newProjectID)
+    checkForNew(colName = "useCPUE", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS) # no force option
     checkForNew(colName = "useSampleMarkRecap", tc = toCompile, db = fishSamplesDB, 
-                is = fishSamplesIS, hdf = headerDF) # no force option
+                is = fishSamplesIS) # no force option
     checkForNew(colName = "otu", tc = toCompile, db = fishInfoDB,
-                is = fishInfoIS, hdf = fishInfoIS, f = force_species) # XXX I DON'T KNOW HOW I FEEL ABOUT THIS USE OF THIS FUNCTION, with hdf = fishInfoIS
+                is = fishInfoIS, f = force_species)
     checkForRepeats(colName = "sampleID", tc = toCompile, db = fishSamplesDB, 
-                    is = fishSamplesIS, hdf = headerDF)
+                    is = fishSamplesIS)
     checkDuplicateFishIDs(is = fishInfoIS, db = fishInfoDB, tc = toCompile)
-    checkDateTimes(hdf = headerDF)
-    checkRangeLimits(colName = "doy", hdf = headerDF, f = force_dayOfYear,
+    checkDateTimes(is = fishSamplesIS, tc = toCompile)
+    checkRangeLimits(colName = "doy", is = fishSamplesIS, tc = toCompile,
+                     f = force_dayOfYear,
                      minVal = 91, maxVal = 305, 
                      allowMinEqual = F, allowMaxEqual = F)
-    checkRangeLimits(colName = "distanceShocked", hdf = headerDF, 
+    checkRangeLimits(colName = "distanceShocked", is = fishSamplesIS, 
+                     tc = toCompile, 
                      f = force_distanceShocked,
                      minVal = 0, maxVal = 25,
                      allowMinEqual = F, allowMaxEqual = F)
-    checkRangeLimits(colName = "effort", hdf = headerDF,
+    checkRangeLimits(colName = "effort", is = fishSamplesIS, 
+                     tc = toCompile,
                      f = force_effort,
                      minVal = 0, maxVal = 24,
                      allowMinEqual = T, allowMaxEqual = F)
     checkFishLengthWeight(db = fishInfoDB, tc = toCompile, is = fishInfoIS, 
                           fl = force_fishLength, fw = force_fishWeight)
-    # XXX can we adapt checkForNew so that it explicitly doesn't require hdf (headerDF)? If so, can we adapt that for clipApply and clipRecapture, too?
+    checkForNew(colName = "clipApply", tc = toCompile, db = fishInfoDB, 
+                is = fishInfoIS, f = force_clipApply)
 
     # write updates to files
     write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 
