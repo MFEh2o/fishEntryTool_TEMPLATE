@@ -69,7 +69,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
   toCompile <- toCompile[!toCompile %in% beenCompiled]
   
   # Start saving header information for this round of sheets compiled (so we can run checks at the end)
-  headerDF <- data.frame()
+  # headerDF <- data.frame()
     
   if(length(toCompile) == 0){
     # No files that have not been compiled into the in-season database
@@ -111,16 +111,16 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                                    format = "%H%M")
       # XXX will need lots of checks here, and in the getHeader function too.
       
-      # Add header information to the overall headerDF
-      headerRow <- header %>% unlist() %>% t() %>% as.data.frame()
-      headerRow$entryFile <- file
-      headerRow <- headerRow %>%
-        mutate(sampleID = paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, sep = "_"),
-               siteID = paste(lakeID, siteName, sep = "_"),
-               doy = as.numeric(strftime(strptime(dateSample,
-                                                   format = "%Y-%m-%d"),
-                                          format = "%j")))
-      headerDF <- bind_rows(headerDF, headerRow)
+      # # Add header information to the overall headerDF
+      # headerRow <- header %>% unlist() %>% t() %>% as.data.frame()
+      # headerRow$entryFile <- file
+      # headerRow <- headerRow %>%
+      #   mutate(sampleID = paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, sep = "_"),
+      #          siteID = paste(lakeID, siteName, sep = "_"),
+      #          doy = as.numeric(strftime(strptime(dateSample,
+      #                                              format = "%Y-%m-%d"),
+      #                                     format = "%j")))
+      # headerDF <- bind_rows(headerDF, headerRow)
       
       # Make new rows for FISH_INFO # XXX this can be its own function
       fishInfoNEW <- curData %>%
