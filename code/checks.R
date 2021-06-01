@@ -246,68 +246,143 @@ checkDateTimes <- function(hdf){
   }
 }
 
-# # fish number check for duplicates
-# if(any(duplicated(fishInfoNEW$fishNum))){
-#   stop("You have duplicate fish numbers and therefore duplicate fishIDs!")
-# }
-# 
-# # size and weight bounds
-# uniqSpec = unique(fishInfoNEW$species)
-# for(j in 1:length(uniqSpec)){
-#   curDB = fishInfoDB[(fishInfoDB$species == uniqSpec[j] & !is.na(fishInfoDB$fishLength)), ]
-#   curDB = curDB[curDB$fishLength>0, ]
-#   curNEW = fishInfoNEW[fishInfoNEW$species == uniqSpec[j], ]
-#   
-#   # range check on lengths, if those data were collected, first if() throws out NFC rows for anglers in some samples if they caught nothing but others in the boat did
-#   if(any(!is.na(curNEW$fishLength))){
-#     curNEW_Lcheck = curNEW[!is.na(curNEW$fishLength), ]
-#     if(any(curNEW_Lcheck$fishLength>0)){
-#       if(nrow(curDB)>15){
-#         if(any(curNEW_Lcheck$fishLength< = 0)){
-#           stop(paste("You report negative fishLength in sample ", paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, sep = "_"), 
-#                      "; Check fish:", paste(curNEW_Lcheck$fishID[curNEW_Lcheck$fishLength< = 0], collapse = ", "), sep = ""))
-#         }
-#         if(any(curNEW_Lcheck$fishLength>(mean(curDB$fishLength)+3*sd(curDB$fishLength)))){
-#           if(force_fishLength == FALSE){
-#             stop(paste("You report fish longer than 3 standard deviations above the mean ever observed by us for", uniqSpec[j], "in sample", paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, sep = "_"), "if you are certain you have fishLength correct for all individuals use the argument force_fishLength;", 
-#                        "Check fish: ", paste(curNEW_Lcheck$fishID[curNEW_Lcheck$fishLength>(mean(curDB$fishLength)+3*sd(curDB$fishLength))], collapse = ", "), sep = " "))
-#           }
-#         } 
-#       }else{
-#         warning(paste("We have less than 15 observations for length of species", uniqSpec[j], " and will not be running an automated fishLength check. Be sure to double check the lengths you've entered.", sep = " "))
-#       }
-#     }
-#   }
-#   # check on weights (based on length-weight regression), if those data were collected
-#   if(any(curNEW$fishWeight>0 & !is.na(curNEW$fishWeight))){
-#     curDB = curDB[!is.na(curDB$fishWeight), ]
-#     curDB = curDB[curDB$fishWeight>0, ]
-#     if(nrow(curDB)>15){
-#       if(any(curNEW$fishWeight< = 0)){
-#         stop(paste("You report negative fishWeight in sample ", paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, sep = "_"), 
-#                    ". Check fish: ", paste(curNEW$fishID[curNEW$fishWeight< = 0], collapse = ", "), sep = ""))
-#       }
-#       #fit length-weight regression for uniqSpec[j]
-#       curDB$logWeight = log(curDB$fishWeight)
-#       curDB$logLength = log(curDB$fishLength)
-#       lwreg = lm(logWeight~logLength, data = curDB)
-#       preds = predict(lwreg, newdata = data.frame(logLength = log(as.numeric(curNEW$fishLength))), interval = "prediction", se.fit = TRUE, level = 0.99)
-#       predsLow = exp(preds$fit[, 2])
-#       predsHigh = exp(preds$fit[, 3])
-#       
-#       if(any(curNEW$fishWeight<predsLow | curNEW$fishWeight>predsHigh)){
-#         if(force_fishWeight == FALSE){
-#           stop(paste("You report fishWeight outside the prediction based on a length-weight regression from our database for", uniqSpec[j], "in sample", paste(lakeID, siteName, dateSampleString, timeSampleString, gear, metadataID, sep = "_"), "if you are certain you have fishWeight correct for all individuals use the argument force_fishWeight;", 
-#                      "The check fish:", paste(curNEW$fishID[curNEW$fishWeight<predsLow | curNEW$fishWeight>predsHigh], collapse = ", "), sep = " "))
-#         }
-#       }
-#     }else{
-#       warning(paste("We have less than 15 observations for weight of species", uniqSpec[j], " and will not be running an automated fishWeight check. Be sure to double check the lengths you've entered.", sep = " "))
-#     }
-#     
-#   }
-#   
-# }
+# checkDuplicateFishIDs --------------------------------------------------
+# Can't use checkForRepeats on this one because we care about *all* the rows, not just comparing new to old.
+checkDuplicateFishIDs <- function(is, db, tc){
+  # Get db fishIDs
+  dbIDs <- db %>%
+    pull(fishID)
+  
+  # Get previously-entered in-season fishIDs
+  oldIS <- is %>%
+    filter(!entryFile %in% tc) %>%
+    pull(fishID)
+  
+  # Get newly-entered fishIDs
+  newIS <- is %>%
+    filter(entryFile %in% tc) %>%
+    pull(fishID)
+  
+  # Check whether there are internal duplicates in the data you're entering
+  if(any(duplicated(newIS))){
+    problemRows <- is %>%
+      filter(entryFile %in% tc) %>%
+      group_by(fishID) %>%
+      filter(n() > 1) %>%
+      arrange(fishID) %>%
+      select(fishID, entryFile)
+    stop(paste0("There are duplicate fishID's in the data you're trying to enter right now. The problem rows are:\n\n",
+                paste0(capture.output(problemRows), collapse = "\n")))
+  }
+  
+  # Check whether any of the fishID's that you're trying to enter already appear in the database
+  if(any(newIS %in% dbIDs)){
+    problemRows <- is %>%
+      filter(entryFile %in% tc) %>%
+      filter(fishID %in% dbIDs) %>%
+      select(fishID, entryFile)
+    stop(paste0("You're trying to enter fishID's that are already present in the FISH_INFO database table. The problem rows are:\n\n",
+                paste0(capture.output(problemRows), collapse = "\n")))
+  }
+  
+  # Check whether any of the fishID's that you're trying to enter already appear in the in-season database
+  if(any(newIS %in% oldIS)){
+    problemRows <- is %>%
+      filter(entryFile %in% tc) %>%
+      filter(fishID %in% oldIS) %>%
+      select(fishID, entryFile)
+    stop(paste0("You're trying to enter fishID's that are already present in the FISH_INFO in-season database. The problem rows are:\n\n",
+                paste0(capture.output(problemRows), collapse = "\n")))
+  }
+}
+
+# checkFishLengthWeight ---------------------------------------------------
+checkFishLengthWeight <- function(db, tc, is, fl, fw){
+  # Get only the newly-entered fish
+  new <- is %>%
+    filter(entryFile %in% tc)
+  
+  # Throw an error for fish weights or lengths that are 0 or negative.
+  problemRows <- new %>%
+    filter(fishLength <= 0|fishWeight <= 0) %>%
+    select(fishID, fishLength, fishWeight, entryFile)
+  if(nrow(problemRows) > 0){
+    stop(paste0("You are trying to enter 0 or negative lengths or weights for the following fish:\n\n",
+                paste0(capture.output(problemRows), collapse = "\n"),
+                "\n\nPlease double-check your lengths and weights. If you don't have length/weight information, leave these values as blank or NA, not 0."))
+  }
+  
+  # Get a list of all the unique species being entered
+  species <- new %>%
+    pull(otu) %>%
+    unique()
+  
+  # Check each species for length
+  lapply(species, function(x){
+    # Get all fish of this species in the database that have length measurements
+    curDB <- db %>% filter(otu == x, !is.na(fishLength), fishLength > 0)
+    curNEW <- new %>% filter(otu == x, !is.na(fishLength)) %>%
+      select(fishID, otu, fishLength, fishWeight)
+    if(nrow(curDB) < 15){
+      warning(paste0("We have <15 observations for length of species ", x, ", so we won't run an automated fishLength check. Be sure to double-check the lengths you've entered."))
+    }else{
+      mn <- mean(curDB$fishLength, na.rm = T)
+      sd <- sd(curDB$fishLength, na.rm = T)
+      tooLong <- curNEW %>%
+        filter(fishLength > mn + 3*sd)
+      tooShort <- curNEW %>%
+        filter(fishLength < mn - 3*sd)
+      if(nrow(tooLong) > 0){
+        if(fl == FALSE){
+          stop(paste0("Found some fish that are longer than 3 sd above the mean for their species, ", x, ". They are:\n\n",
+                      paste0(capture.output(tooLong), collapse = "\n")))
+        }
+      }
+      if(nrow(tooShort) > 0){
+        if(fl == FALSE){
+          stop(paste0("Found some fish that are shorter than 3 sd below the mean for their species, ", x, ". They are:\n\n",
+                      paste0(capture.output(tooShort), collapse = "\n")))
+        }
+      }
+    }
+    
+  # Now, limit the database subset down to just the ones that also have weight measurements.
+  curDB_weight <- curDB %>%
+    filter(!is.na(fishWeight), fishWeight > 0)
+  if(nrow(curDB) < 15){
+    warning(paste0("We have <15 observations for weight of species ", x, ", so we won't run an automated length-weight regression. Be sure to double-check the weights you've entered."))
+  }else{
+    lwreg <- lm(log(fishWeight) ~ log(fishLength), data = curDB)
+    preds <- predict(lwreg, 
+                     newdata = data.frame(logLength = log(as.numeric(curNEW$fishLength))),
+                     interval = "prediction",
+                     se.fit = TRUE,
+                     level = 0.99)
+    predsLow <- exp(preds$fit[,2])
+    predsHigh <- exp(preds$fit[,3])
+    
+    # Are any of the newly-entered fish weights < predsLow or > predsHigh...
+    tooHeavy <- curNEW %>%
+      filter(fishWeight > predsHigh)
+    tooLight <- curNEW %>%
+      filter(fishWeight < predsLow)
+    
+    if(nrow(tooHeavy) > 0){
+      if(fw == FALSE){
+        stop(paste0("You report fishWeight heavier than the prediction based on a length-weight regression from our database for ", x, ". Here are the problematic rows:\n\n",
+                    paste0(capture.output(tooHeavy), collapse = "\n")))
+      }
+    }
+    if(nrow(tooLight) > 0){
+      if(fw == FALSE){
+        stop(paste0("You report fishWeight lighter than the prediction based on a length-weight regression from our database for ", x, ". Here are the problematic rows:\n\n",
+                    paste0(capture.output(tooLight), collapse = "\n")))
+      }
+    }
+  }
+  })
+}
+
 # 
 # ### tag marks and recaps --> figure what the common prefixes are and distinguish errors in prefix vs. individual number?
 # 
