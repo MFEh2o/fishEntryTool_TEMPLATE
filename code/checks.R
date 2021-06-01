@@ -163,7 +163,8 @@ checkForNew <- function(colName, tc, db, is, hdf, f = NULL){
     if(!is.null(f) & f == FALSE){
       stop(paste0("You are attempting to add ", colName, " values that do not exist in either the database or the in-season file. Here are the values, and the sample sheets they come from:\n\n",
                   paste0(capture.output(problemRows), collapse = "\n"),
-                  "\n\nIf you are sure that these values are valid, use the", f, " argument."))
+                  "\n\nIf you are sure that these values are valid, use the ", 
+                  deparse(substitute(f)), " argument."))
     }
   }
 }
@@ -318,7 +319,7 @@ checkFishLengthWeight <- function(db, tc, is, fl, fw){
     unique()
   
   # Check each species for length
-  lapply(species, function(x){
+  purrr::walk(.x = species, .f = function(x, ...){
     # Get all fish of this species in the database that have length measurements
     curDB <- db %>% filter(otu == x, !is.na(fishLength), fishLength > 0)
     curNEW <- new %>% filter(otu == x, !is.na(fishLength)) %>%
@@ -329,9 +330,9 @@ checkFishLengthWeight <- function(db, tc, is, fl, fw){
       mn <- mean(curDB$fishLength, na.rm = T)
       sd <- sd(curDB$fishLength, na.rm = T)
       tooLong <- curNEW %>%
-        filter(fishLength > mn + 3*sd)
+        filter(as.numeric(fishLength) > mn + 3*sd)
       tooShort <- curNEW %>%
-        filter(fishLength < mn - 3*sd)
+        filter(as.numeric(fishLength) < mn - 3*sd)
       if(nrow(tooLong) > 0){
         if(fl == FALSE){
           stop(paste0("Found some fish that are longer than 3 sd above the mean for their species, ", x, ". They are:\n\n",
@@ -346,40 +347,42 @@ checkFishLengthWeight <- function(db, tc, is, fl, fw){
       }
     }
     
-  # Now, limit the database subset down to just the ones that also have weight measurements.
-  curDB_weight <- curDB %>%
-    filter(!is.na(fishWeight), fishWeight > 0)
-  if(nrow(curDB) < 15){
-    warning(paste0("We have <15 observations for weight of species ", x, ", so we won't run an automated length-weight regression. Be sure to double-check the weights you've entered."))
-  }else{
-    lwreg <- lm(log(fishWeight) ~ log(fishLength), data = curDB)
-    preds <- predict(lwreg, 
-                     newdata = data.frame(logLength = log(as.numeric(curNEW$fishLength))),
-                     interval = "prediction",
-                     se.fit = TRUE,
-                     level = 0.99)
-    predsLow <- exp(preds$fit[,2])
-    predsHigh <- exp(preds$fit[,3])
-    
-    # Are any of the newly-entered fish weights < predsLow or > predsHigh...
-    tooHeavy <- curNEW %>%
-      filter(fishWeight > predsHigh)
-    tooLight <- curNEW %>%
-      filter(fishWeight < predsLow)
-    
-    if(nrow(tooHeavy) > 0){
-      if(fw == FALSE){
-        stop(paste0("You report fishWeight heavier than the prediction based on a length-weight regression from our database for ", x, ". Here are the problematic rows:\n\n",
-                    paste0(capture.output(tooHeavy), collapse = "\n")))
+    # Now, limit the database subset down to just the ones that also have weight measurements.
+    curDB_weight <- curDB %>%
+      filter(!is.na(fishWeight), fishWeight > 0)
+    if(nrow(curDB_weight) < 15){
+      warning(paste0("We have <15 observations for weight of species ", x, ", so we won't run an automated length-weight regression. Be sure to double-check the weights you've entered."))
+    }else{
+      curDB_weight$logWeight <- log(curDB_weight$fishWeight)
+      curDB_weight$logLength <- log(curDB_weight$fishLength)
+      lwreg <- lm(logWeight ~ logLength, data = curDB_weight)
+      # Predict high and low weight bounds for each individual
+      preds <- predict(lwreg, newdata = 
+                         data.frame(logLength = 
+                                      log(as.numeric(curNEW$fishLength))),
+                       interval = "prediction",
+                       se.fit = TRUE, level = 0.99)
+      curNEW$predsLow <- exp(preds$fit[,2])
+      curNEW$predsHigh <- exp(preds$fit[,3])
+      # Are any of the newly-entered fish weights < predsLow or > predsHigh...
+      tooHeavy <- curNEW %>%
+        filter(as.numeric(fishWeight) > predsHigh)
+      tooLight <- curNEW %>%
+        filter(as.numeric(fishWeight) < predsLow)
+      
+      if(nrow(tooHeavy) > 0){
+        if(fw == FALSE){
+          stop(paste0("You report fishWeight heavier than the prediction based on a length-weight regression from our database for ", x, ". Here are the problematic rows:\n\n",
+                      paste0(capture.output(tooHeavy), collapse = "\n")))
+        }
+      }
+      if(nrow(tooLight) > 0){
+        if(fw == FALSE){
+          stop(paste0("You report fishWeight lighter than the prediction based on a length-weight regression from our database for ", x, ". Here are the problematic rows:\n\n",
+                      paste0(capture.output(tooLight), collapse = "\n")))
+        }
       }
     }
-    if(nrow(tooLight) > 0){
-      if(fw == FALSE){
-        stop(paste0("You report fishWeight lighter than the prediction based on a length-weight regression from our database for ", x, ". Here are the problematic rows:\n\n",
-                    paste0(capture.output(tooLight), collapse = "\n")))
-      }
-    }
-  }
   })
 }
 

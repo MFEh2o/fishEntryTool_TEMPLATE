@@ -324,6 +324,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                      f = force_effort,
                      minVal = 0, maxVal = 24,
                      allowMinEqual = T, allowMaxEqual = F)
+    checkFishLengthWeight(db = fishInfoDB, tc = toCompile, is = fishInfoIS, 
+                          fl = force_fishLength, fw = force_fishWeight)
     
     # write updates to files
     write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 
