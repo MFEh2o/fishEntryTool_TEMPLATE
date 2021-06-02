@@ -40,7 +40,9 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                        force_clipRecapture = FALSE,
                        force_clipLake = FALSE,
                        force_pitApply = FALSE,
-                       force_floyApply = FALSE){
+                       force_floyApply = FALSE,
+                       force_pitLake = FALSE,
+                       force_floyLake = FALSE){
   
   source(file.path(funcdir, "dbUtil.R")) # load the dbUtil functions
   
@@ -327,7 +329,14 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                     is = fishInfoIS, na.ok = T, f = force_pitApply)
     checkForRepeats(colName = "floyApply", tc = toCompile, db = fishInfoDB,
                     is = fishInfoIS, na.ok = T, f = force_floyApply)
+    tagLakeCheck(tc = toCompile, db = fishInfoDB, is = fishInfoIS,
+                 f = force_clipLake, type = "clip")
+    tagLakeCheck(tc = toCompile, db = fishInfoDB, is = fishInfoIS,
+                 f = force_pitLake, type = "pit")
+    tagLakeCheck(tc = toCompile, db = fishInfoDB, is = fishInfoIS,
+                 f = force_floyLake, type = "floy")
 
+    
     # write updates to files
     write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 
               row.names = FALSE)

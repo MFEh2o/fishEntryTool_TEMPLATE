@@ -390,60 +390,50 @@ checkFishLengthWeight <- function(db, tc, is, fl, fw){
   })
 }
 
-# clipLakeCheck --------------------------------------------------------------
-clipLakeCheck <- function(tc, db, is, f){
-  # Get new data that has clipRecapture values and split by lake
-  # add a lakeID column
-  newData <- is %>%
-    filter(entryFile %in% tc,
-           !is.na(clipRecapture)) %>%
+# clipTagLakeCheck ------------------------------------------------------------
+tagLakeCheck <- function(tc, db, is, f, type){
+  # Make sure the 'type' argument is either pit or floy or clip
+  assertSubset(type, choices = c("pit", "floy", "clip"))
+  
+  ap <- paste0(type, "Apply")
+  re <- paste0(type, "Recapture")
+  
+  # Get new data
+  newData <- is[is$entryFile %in% tc & !is.na(is[,re]),] %>%
     mutate(lakeID = word(sampleID, 1, 1, sep = "_"))
   
-  # get an alphabetical list of lakes
-  lakes <- newData %>% arrange(lakeID) %>% pull(lakeID) %>% unique()
-  
-  # arrange the recaptures by lake
-  recapturesByLake <- newData %>%
-    arrange(lakeID) %>% group_by(lakeID) %>% group_split() %>%
-    setNames(., lakes)
-  
-  # pull out all the past values of clipApply by lake
-  pastClipValues <- db %>%
-    mutate(lakeID = word(sampleID, 1, 1, sep = "_")) %>%
-    arrange(lakeID) %>% group_by(lakeID) %>% group_split() %>%
-    lapply(., function(x) x %>%
-             filter(!is.na(clipApply)) %>%
-             pull(clipApply) %>% unique())
-  
-  # For each lake, check whether the current clipRecapture values have been applied in the past.
-  map2(.x = recapturesByLake, ) # XXX START HERE--there has to be a better way to do this! yoikes.
+  # Loop through the lakes and check for any *Recapture values that were not previously applied in this lake
+  if(nrow(newData) > 0){
+    for(i in 1:length(unique(newData$lakeID))){
+      l <- unique(newData$lakeID)[i]
+      
+      # Get all new data from this lake
+      lakeSubsetNew <- newData %>%
+        filter(lakeID == l)
+      
+      # Get all old data from this lake (that had tags/clips applied)
+      lakeSubsetOld <- db %>% 
+        filter(!is.na(.data[[re]])) %>%
+        mutate(lakeID = word(sampleID, 1, 1, sep = "_")) %>%
+        filter(lakeID == l)
+      
+      # Find any problems (*Recapture values that didn't previously appear as *Apply values in this lake)
+      problemRows <- lakeSubsetNew %>%
+        filter(!.data[[re]] %in% lakeSubsetOld[,ap]) %>%
+        select(fishID, re)
+      
+      # If there are problem rows, throw an error.
+      if(nrow(problemRows) > 0){
+        if(f == F){
+          stop(paste0("You are reporting ", re, " values that don't match past ", ap, " values from this lake. The problematic rows are:\n\n",
+                      paste0(capture.output(problemRows), collapse = "\n"),
+                      "\n\nIf you're sure you want to report these values, use ",
+                      deparse(substitute(f)), "."))
+        }
+      }
+    }
+  }
 }
-
-
-# 
-# ### tag marks and recaps --> figure what the common prefixes are and distinguish errors in prefix vs. individual number?
-# 
-# # -clipApply & clipRecapture should be in the database
-# clips = c(curNEW$clipApply, curNEW$clipRecapture)
-# clips = clips[!is.na(clips)]
-# if(length(clips)>0){
-#   if(any(!clips%in%c(fishInfoDB$clipApply, fishInfoDB$clipRecapture, fishInfoIS$clipApply, fishInfoIS$clipRecapture))){
-#     if(force_clip == FALSE){
-#       stop("You have indicated a clipApply or clipRecapture that is not in the database or in-season database. If you are certain this is the correct clipApply or clipRecapture then use the argument force_clip.")
-#     }
-#   }
-# }
-# 
-# #check for clipApply of that type in that lake
-# clipRecap = curNEW$clipRecapture[!is.na(curNEW$clipRecapture)]
-# if(length(clipRecap)>0){
-#   if(any(!unique(clipRecap)%in%c(fishInfoDB$clipApply[grepl(lakeID, fishInfoDB$sampleID)], fishInfoIS$clipApply[grepl(lakeID, fishInfoIS$sampleID)]))){
-#     
-#     if(force_clip == FALSE){
-#       stop("You have indicated a clipApply or clipRecapture that is not in the database or in-season database. If you are certain this is the correct clipApply or clipRecapture then use the argument force_clip.")
-#     }
-#   }
-# }
 
 # # -tagRecap should have an apply in the database from that lake at some point in the past
 # # the absence of a previous apply might mean it was entered wrong
