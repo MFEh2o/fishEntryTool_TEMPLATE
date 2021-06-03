@@ -20,8 +20,8 @@ getHeader <- function(d = cur){
   
   header$dateTimeSet <- paste0(header$dateTimeSet, ":00")
   header$dateTimeSample <- paste0(header$dateTimeSample, ":00")
-  header$dateSet = strftime(strptime(header$dateTimeSet, format = "%m/%d/%Y %H:%M:%S"), format = "%Y-%m-%d")
-  header$dateSample = strftime(strptime(header$dateTimeSample, format = "%m/%d/%Y %H:%M:%S"), format = "%Y-%m-%d")
+  header$dateSet <- lubridate::date(lubridate::mdy_hms(header$dateTimeSet))
+  header$dateSample <- lubridate::date(lubridate::mdy_hms(header$dateTimeSample))
   
   header$crew <- str_replace_all(header$crew, ",", ", ") %>%
     str_replace_all(., "\\s\\s", " ")
