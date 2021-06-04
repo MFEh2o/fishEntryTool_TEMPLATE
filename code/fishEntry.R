@@ -75,6 +75,14 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
   toCompile <- list.files(path = here("sampleSheets"), 
                           pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}\\.csv")
   toCompile <- toCompile[!toCompile %in% beenCompiled]
+  
+  # Initialize data frames to hold just the new FISH_INFO and FISH_SAMPLES data, to make checks easier (so we don't have to re-separate everything once it's joined to fishInfoIS and fishSamplesIS.)
+  newFI <- data.frame() # info
+  newFS <- data.frame() # samples
+  newFO <- data.frame() # otoliths
+  newFP <- data.frame() # spines
+  newFC <- data.frame() # scales
+  newFD <- data.frame() # diets
     
   if(length(toCompile) == 0){
     # No files that have not been compiled into the in-season database
@@ -112,12 +120,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       fishInfoNEW <- convertSpeciesAbbreviations(x = fishInfoNEW, fn = fishNames)
       
       # Convert the tag columns to match the new format
-      ## First, basic checks on tag types and numbers
-      #checkTag(fishInfoNEW, type = "apply") # XXX come back to this
-      #checkTag(fishInfoNEW, type = "recapture") # XXX come back to this
-      #checkTagRecap(fishInfoNEW)
-      assertAtomic(fishInfoNEW$fishID, unique = TRUE) # make sure all the fishID's are unique
-      
+      assertAtomic(fishInfoNEW$fishID, unique = TRUE) # make sure all the fishID's are unique # XXX this can go somewhere else, I think
       fishInfoNEW <- convertTagColumns(fin = fishInfoNEW)
         
       # generate FISH_SAMPLES rows
@@ -179,18 +182,28 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
         }
       }
       
-      # update tables with new entries
-      fishSamplesIS <- bind_rows(tochar(fishSamplesIS), tochar(fishSamplesNEW))
-      fishInfoIS <- bind_rows(tochar(fishInfoIS), tochar(fishInfoNEW))
-      if(exists("fishDietsNEW")){fishDietsLOG <- bind_rows(tochar(fishDietsLOG), 
-                                                           tochar(fishDietsNEW))}
-      if(exists("fishOtolithsNEW")){fishOtolithsLOG <- bind_rows(tochar(fishOtolithsLOG), 
-                                                                 tochar(fishOtolithsNEW))}
-      if(exists("fishSpinesNEW")){fishSpinesLOG <- bind_rows(tochar(fishSpinesLOG), 
-                                                             tochar(fishSpinesNEW))}
-      if(exists("fishScalesNEW")){fishScalesLOG <- bind_rows(tochar(fishScalesLOG), 
-                                                             tochar(fishScalesNEW))}
+      # Update the df's with new data
+      if(exists("fishInfoNEW")){newFI <- bind_rows(tochar(newFI),
+                                                      tochar(fishInfoNEW))}
+      if(exists("fishSamplesNEW")){newFS <- bind_rows(tochar(newFS),
+                                                      tochar(fishSamplesNEW))}
+      if(exists("fishOtolithsNEW")){newFO <- bind_rows(tochar(newFO),
+                                                      tochar(fishOtolithsNEW))}
+      if(exists("fishSpinesNEW")){newFP <- bind_rows(tochar(newFP),
+                                                      tochar(fishSpinesNEW))}
+      if(exists("fishScalesNEW")){newFC <- bind_rows(tochar(newFC),
+                                                      tochar(fishScalesNEW))}
+      if(exists("fishDietsNEW")){newFD <- bind_rows(tochar(newFD),
+                                                      tochar(fishDietsNEW))}
     }
+    
+    # Update tables with new entries ------------------------------------------
+    fishInfoIS <- bind_rows(tochar(fishInfoIS), tochar(newFI))
+    fishSamplesIS <- bind_rows(tochar(fishSamplesIS), tochar(newFS))
+    fishOtolithsLOG <- bind_rows(tochar(fishOtolithsLOG), tochar(newFO))
+    fishSpinesLOG <- bind_rows(tochar(fishSpinesLOG), tochar(newFP))
+    fishScalesLOG <- bind_rows(tochar(fishScalesLOG), tochar(newFC))
+    fishDietsLOG <- bind_rows(tochar(fishDietsLOG), tochar(newFD))
     
     # Run checks --------------------------------------------------------------
     # XXX sort checks by which data frame (fish samples, fish info) they're checking

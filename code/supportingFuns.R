@@ -122,7 +122,58 @@ makeFishInfoNEW <- function(d = curData, h = header, dss = dateSampleString, tss
 
 # convertTagColumns -------------------------------------------------------
 convertTagColumns <- function(fin = fishInfoNEW){
+  assertDataFrame(fin)
+  assertSubset(c("tagApply", "tagRecapture", "tagApplyType", "tagRecaptureType", 
+                 "oldTag", "fishID"), names(fin))
+  
+  # Make sure all tags are either 'pit', 'floy', or NA
+  assertSubset(fin$tagApplyType, choices = c("pit", "floy", NA))
+  assertSubset(fin$tagRecaptureType, choices = c("pit", "floy", NA))
+  
+  # Check that all rows that have a tag value also have a tag type
+  missingTypeApply <- x %>%
+    filter(is.na(tagApplyType), !is.na(tagApply)) %>%
+    select("fishID", tagApplyType, tagApply)
+    
+  missingTypeRecapture <- x %>%
+    filter(is.na(tagRecaptureType), !is.na(tagRecapture)) %>%
+    select("fishID", tagRecaptureType, tagRecapture)
+  
+  if(nrow(missingTypeApply) > 0){
+    stop(paste0("Missing type for the following applied tag numbers:\n\n",
+                paste0(capture.output(missingTypeApply), collapse = "\n"),
+                "\n\nYou must provide a tag type (pit or floy) in order for the entry tool to run."))
+  }
+  
+  if(nrow(missingTypeRecapture) > 0){
+    stop(paste0("Missing type for the following recaptured tag numbers:\n\n",
+                paste0(capture.output(missingTypeRecapture), collapse = "\n"),
+                "\n\nYou must provide a tag type (pit or floy) in order for the entry tool to run."))
+  }
+  
+  # Check that all rows that have a tag type also have a tag value
+  missingTagApply <- x %>%
+    filter(is.na(tagApply), !is.na(tagApplyType)) %>%
+    select("fishID", tagApplyType, tagApply)
+  
+  missingTagRecapture <- x %>%
+    filter(is.na(tagRecapture), !is.na(tagRecaptureType)) %>%
+    select("fishID", tagRecaptureType, tagRecapture)
+  
+  if(nrow(missingTagApply) > 0){
+    stop(paste0("Missing tag number for the following applied tags:\n\n",
+                paste0(capture.output(missingTagApply), collapse = "\n"),
+                "\n\nYou must provide a tag number in order for the entry tool to run. If the tag was unreadable or you didn't record the tag number, please write 'unknown'."))
+  }
+  
+  if(nrow(missingTagRecapture) > 0){
+    stop(paste0("Missing tag number for the following recaptured tags:\n\n",
+                paste0(capture.output(missingTagRecapture), collapse = "\n"),
+                "\n\nYou must provide a tag number in order for the entry tool to run. If the tag was unreadable or you didn't record the tag number, please write 'unknown'."))
+  }
+  
   # XXX what to do about oldTag?
+  # Reformat the tag columns
   tags <- fin %>%
     select(tagApply, tagRecapture, tagApplyType, tagRecaptureType, oldTag, fishID) %>%
     mutate(pitApply = case_when(!is.na(tagApply) & tagApplyType == "pit" ~ tagApply,
@@ -138,10 +189,12 @@ convertTagColumns <- function(fin = fishInfoNEW){
     select(-oldTag) %>%
     select(-c(tagApply, tagRecapture, tagApplyType, tagRecaptureType))
   
+  # Join the reformatted tag columns back to fishInfoNEW and remove the old format
   fishInfoNEW <- fin %>%
     select(-c(oldTag, tagApply, tagRecapture, tagApplyType, tagRecaptureType)) %>%
     left_join(tags, by = "fishID")
   
+  # Spit out the reformatted data
   return(fishInfoNEW)
 }
 
