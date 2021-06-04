@@ -48,7 +48,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
   
   source(file.path(funcdir, "dbUtil.R")) # load the dbUtil functions
   
-  # Load tables from database
+  # Load database tables ---------------------------------------------------
   lakesDB <- suppressWarnings(dbTable("lakes"))
   sitesDB <- suppressWarnings(dbTable("sites"))
   fishSamplesDB <- suppressWarnings(dbTable("fish_samples"))
@@ -58,7 +58,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
   # Grab all the 'fish' from OTU, for use in converting abbreviations to species names
   fishNames <- otu %>% filter(grouping == "fish")
   
-  # Load in-season database files, or initialize them if they don't already exist
+  # Load in-season db files ------------------------------------------------
+  # (or initialize them if they don't already exist)
   ## FISH_INFO
   if("fishInfoIS.csv" %in% list.files(isdir)){
     fishInfoIS <- read.csv(here(isdir, "fishInfoIS.csv"), 
@@ -74,6 +75,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     fishSamplesIS <- fishSamplesDB[FALSE, ]
   }
   
+  # Prepare to compile files -----------------------------------------------
   # Check which files have been compiled and which have not in the directory
   beenCompiled <- unique(fishInfoIS$entryFile)
   filenames <- list.files(path = here("sampleSheets"), 
@@ -87,27 +89,32 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
   newFP <- data.frame() # spines
   newFC <- data.frame() # scales
   newFD <- data.frame() # diets
-    
+  
+  # Compile sample sheets --------------------------------------------------
   if(length(toCompile) == 0){
     # No files that have not been compiled into the in-season database
     "The in season database is up to date; no new files to compile"
   }else{
     # There are files to be compiled; generate rows to append
     for(i in 1:length(toCompile)){
+      message("Compiling sample sheets")
       # Save the file name as a variable `file` for future use
       file <- toCompile[i]
       message(paste0("Compiling file ", i, ": ", file))
       
+      # Get file ----------------------------------------------------------
       # Read in the current file, setting all blank cells to NA
       cur <- read.csv(here("sampleSheets", file), 
                       na.strings = c("", " ", "NA"), header = F)
       
+      # Get header --------------------------------------------------------
       # Pull header info
       header <- getHeader(cur)
       
-      # Check for NA or empty strings in the header, taking into account whether a value for distanceShocked is expected. Regardless of gear, comments are allowed to be NA.
+      # Check the header values
       checkHeader(header)
       
+      # Get data ----------------------------------------------------------
       # Tabular data
       curData <- getCurData(cur)
       
@@ -115,22 +122,20 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       dateSampleString <- date(header$dateTimeSample) %>% str_remove_all(., "-")
       timeSampleString <- paste0(hour(header$dateTimeSample), minute(header$dateTimeSample))
 
-      # Make new rows for FISH_INFO
+      # Make FISH_INFO -----------------------------------------------------
       fishInfoNEW <- makeFishInfoNEW(d = curData, h = header, 
                                      dss = dateSampleString, 
                                      tss = timeSampleString, f = file)
-      
       # Convert species abbreviations to common names
       fishInfoNEW <- convertSpeciesAbbreviations(x = fishInfoNEW, fn = fishNames)
-      
       # Convert the tag columns to match the new format
-      assertAtomic(fishInfoNEW$fishID, unique = TRUE) # make sure all the fishID's are unique # XXX this can go somewhere else, I think
       fishInfoNEW <- convertTagColumns(fin = fishInfoNEW)
         
-      # generate FISH_SAMPLES rows
+      # Make FISH_SAMPLES --------------------------------------------------
       fishSamplesNEW <- makeFishSamplesNEW(h = header, dss = dateSampleString, 
                                            tss = timeSampleString, f = file)
       
+      # Get otolith data -------------------------------------------------
       # Check for otoliths pulled and generate a log of fish otoliths
       if("otolithSample" %in% names(curData)){
         # If any otoliths were taken
@@ -147,6 +152,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
         }
       }
       
+      # Get spine data -------------------------------------------------
       # Check for spines pulled and generate a log of fish spines
       if("spineSample" %in% names(curData)){
         if(any(curData$spineSample == 1)){
@@ -160,6 +166,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
         }
       }
       
+      # Get scale data -------------------------------------------------
       # Check for scales pulled and generate a log of fish scales
       if("scaleSample" %in% names(curData)){
         if(any(curData$scaleSample == 1)){
@@ -173,6 +180,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
         }
       }
       
+      # Get diet data -------------------------------------------------
       # Check for diets taken and generate a log of diets
       if("dietSampled" %in% names(curData)){
         if(any(curData$dietSampled == 1)){
@@ -186,7 +194,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
         }
       }
       
-      # Update the df's with new data
+      # Update temporary df's with new data -------------------------------
       if(exists("fishInfoNEW")){newFI <- bind_rows(tochar(newFI),
                                                       tochar(fishInfoNEW))}
       if(exists("fishSamplesNEW")){newFS <- bind_rows(tochar(newFS),
@@ -203,61 +211,56 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     
     # Run checks --------------------------------------------------------------
     # Note that I run these checks *before* adding the new compiled data to the in-season database. Otherwise, I'd have to separate out the new IS data from the old IS data in every check function, which is super tedious.
-    # XXX sort checks by which data frame (fish samples, fish info) they're checking
-    checkForNew(colName = "lakeID", tc = toCompile, db = lakesDB, 
-                is = fishSamplesIS, 
-                f = force_lakeID)
-    checkForNew(colName = "siteID", tc = toCompile, db = sitesDB, is = fishSamplesIS, 
-                f = force_siteID) # XXX Could maybe have a 'did you mean' option that uses fuzzy matching or similar to find any siteID's that are similar, and suggest them?
-    checkForNew(colName = "gear", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
-                f = force_gear)
-    checkForNew(colName = "sampleGroup", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
-                f = force_sampleGroup)
-    checkForNew(colName = "effortUnits", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
-                f = force_effortUnits)
-    checkForNew(colName = "metadataID", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
-                f = force_metadataID) # XXX Could maybe have a 'did you mean' option that uses fuzzy matching or similar to find any metadataID's that are similar, and suggest them?
-    checkForNew(colName = "projectID", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS,
-                f = force_newProjectID)
-    checkForNew(colName = "useCPUE", tc = toCompile, db = fishSamplesDB, is = fishSamplesIS) # no force option
-    checkForNew(colName = "useSampleMarkRecap", tc = toCompile, db = fishSamplesDB, 
-                is = fishSamplesIS) # no force option
-    checkForNew(colName = "otu", tc = toCompile, db = fishInfoDB,
-                is = fishInfoIS, f = force_species)
-    checkForRepeats(colName = "sampleID", tc = toCompile, db = fishSamplesDB, 
+    # XXX possible fuzzy matching 'did you mean' option for e.g. site names, metadataID's
+    # FISH_SAMPLES
+    checkForNew(colName = "lakeID", new = newFS, db = lakesDB, 
+                is = fishSamplesIS, f = force_lakeID)
+    checkForNew(colName = "siteID", new = newFS, db = sitesDB, 
+                is = fishSamplesIS, f = force_siteID)
+    checkForNew(colName = "gear", new = newFS, db = fishSamplesDB, 
+                is = fishSamplesIS, f = force_gear)
+    checkForNew(colName = "sampleGroup", new = newFS, db = fishSamplesDB, 
+                is = fishSamplesIS, f = force_sampleGroup)
+    checkForNew(colName = "effortUnits", new = newFS, db = fishSamplesDB, 
+                is = fishSamplesIS, f = force_effortUnits)
+    checkForNew(colName = "metadataID", new = newFS, db = fishSamplesDB, 
+                is = fishSamplesIS, f = force_metadataID)
+    checkForNew(colName = "projectID", new = newFS, db = fishSamplesDB, 
+                is = fishSamplesIS, f = force_newProjectID)
+    assertSubset(newFS$useCPUE, 
+                 choices = unique(fishSamplesDB$useCPUE)) # no force option
+    assertSubset(newFS$useSampleMarkRecap, 
+                 choices = unique(fishSamplesDB$useSampleMarkRecap)) # no force option
+    checkForRepeats(colName = "sampleID", new = newFS, db = fishSamplesDB, 
                     is = fishSamplesIS)
-    checkDuplicateFishIDs(is = fishInfoIS, db = fishInfoDB, tc = toCompile)
-    checkDateTimes(is = fishSamplesIS, tc = toCompile)
-    checkRangeLimits(colName = "doy", is = fishSamplesIS, tc = toCompile,
-                     f = force_dayOfYear,
-                     minVal = 91, maxVal = 305, 
+    checkDateTimes(new = newFS)
+    checkRangeLimits(colName = "doy", is = fishSamplesIS, new = newFS,
+                     f = force_dayOfYear, minVal = 91, maxVal = 305, 
                      allowMinEqual = F, allowMaxEqual = F)
     checkRangeLimits(colName = "distanceShocked", is = fishSamplesIS, 
-                     tc = toCompile, 
-                     f = force_distanceShocked,
-                     minVal = 0, maxVal = 25,
-                     allowMinEqual = F, allowMaxEqual = F)
-    checkRangeLimits(colName = "effort", is = fishSamplesIS, 
-                     tc = toCompile,
-                     f = force_effort,
-                     minVal = 0, maxVal = 24,
+                     new = newFS, f = force_distanceShocked, minVal = 0, 
+                     maxVal = 25, allowMinEqual = F, allowMaxEqual = F)
+    checkRangeLimits(colName = "effort", is = fishSamplesIS, new = newFS,
+                     f = force_effort, minVal = 0, maxVal = 24,
                      allowMinEqual = T, allowMaxEqual = F)
-    checkFishLengthWeight(db = fishInfoDB, tc = toCompile, is = fishInfoIS, 
+    
+    # FISH_INFO
+    checkForNew(colName = "otu", new = newFI, db = fishInfoDB,
+                is = fishInfoIS, f = force_species)
+    checkDuplicateFishIDs(is = fishInfoIS, db = fishInfoDB, new = newFI)
+    checkFishLengthWeight(db = fishInfoDB, new = newFI, is = fishInfoIS, 
                           fl = force_fishLength, fw = force_fishWeight)
+    checkForRepeats(colName = "sampleID", new = newFI, db = fishInfoDB, 
+                    is = fishInfoIS)
     checkForNew(colName = "clipApply", tc = toCompile, db = fishInfoDB, 
                 is = fishInfoIS, f = force_clipApply)
-    checkForNew(colName = "clipRecapture", tc = toCompile, db = fishInfoDB,
-                is = fishInfoIS, f = force_clipRecapture)
+    
+
     checkForRepeats(colName = "pitApply", tc = toCompile, db = fishInfoDB,
                     is = fishInfoIS, na.ok = T, f = force_pitApply)
     checkForRepeats(colName = "floyApply", tc = toCompile, db = fishInfoDB,
                     is = fishInfoIS, na.ok = T, f = force_floyApply)
-    clipTagLakeCheck(tc = toCompile, db = fishInfoDB, is = fishInfoIS,
-                 f = force_clipLake, type = "clip")
-    clipTagLakeCheck(tc = toCompile, db = fishInfoDB, is = fishInfoIS,
-                 f = force_pitLake, type = "pit")
-    clipTagLakeCheck(tc = toCompile, db = fishInfoDB, is = fishInfoIS,
-                 f = force_floyLake, type = "floy")
+
     
     # Update tables with new entries ------------------------------------------
     fishInfoIS <- bind_rows(tochar(fishInfoIS), tochar(newFI))
