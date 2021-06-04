@@ -450,7 +450,7 @@ lakeSpeciesCheck <- function(tc, db, is, forceNew, type){
            tagLakeSpecies = paste(lakeID, otu, .data[[ap]], sep = "_"), # WL_bluegill_13059801
            tagLake = paste(lakeID, .data[[ap]], sep = "_"), # WL_13059801
            tagSpecies = paste(otu, .data[[ap]], sep = "_") # bluegill_13059801
-           ) %>% 
+    ) %>% 
     distinct()
   
   if(nrow(newData) > 0){
@@ -459,7 +459,7 @@ lakeSpeciesCheck <- function(tc, db, is, forceNew, type){
              tagLakeSpecies = paste(lakeID, otu, .data[[re]], sep = "_"), # WL_bluegill_13059801
              tagLake = paste(lakeID, .data[[re]], sep = "_"), # WL_13059801
              tagSpecies = paste(otu, .data[[re]], sep = "_") # bluegill_13059801
-             ) %>% 
+      ) %>% 
       # Annotate each row of the new data
       mutate(problem = case_when(
         # No problem: tag has been applied to the same species in the same lake
@@ -515,6 +515,46 @@ lakeSpeciesCheck <- function(tc, db, is, forceNew, type){
                 "\n\nFix the lake and try again.")) # XXX what if it moved lakes, e.g. WL, EL?
   }
 }
+
+# checkClipRecapture ------------------------------------------------------
+checkClipRecapture <- function(new = newFI, db = fishInfoDB, is = fishInfoIS, 
+                               f = force_clipRecapture){
+  # Get old clip/species apply combos
+  previous <- db %>%
+    filter(!is.na(clipApply)) %>%
+    mutate(lakeID = word(fishID, 1, 1, sep = "_")) %>%
+    select(lakeID, otu, clipApply)%>%
+    bind_rows(fishInfoIS %>%
+                filter(!is.na(clipApply)) %>%
+                mutate(lakeID = word(fishID, 1, 1, sep = "_")) %>%
+                select(lakeID, otu, clipApply)) %>%
+    distinct() %>%
+    mutate(combo = paste(lakeID, otu, clipApply, sep = "_"))
+  
+  # Get new clip/species recapture combos
+  new <- new %>%
+    filter(!is.na(clipRecapture)) %>%
+    mutate(lakeID = word(fishID, 1, 1, sep = "_")) %>%
+    select(fishID, lakeID, otu, clipRecapture) %>%
+    distinct() %>%
+    mutate(combo = paste(lakeID, otu, clipRecapture, sep = "_"))
+  
+  # Check whether any of the recaptures have no precedent (same clip type in this lake/species)
+  if(nrow(new) > 0){
+    problemRows <- new %>%
+      filter(!combo %in% previous$combo) %>%
+      select(fishID, otu, clipRecapture)
+    
+    if(nrow(problemRows) > 0){
+      if(f == F){
+        stop(paste0("You are reporting clipRecapture values that haven't been previously reported in the same lake and fish species:\n\n",
+        paste0(capture.output(problemRows), sep = "\n"),
+        "\n\nDouble-check your clip type, species, and lake information. If you're sure you want to report these clipRecapture values, use the force_clipRecapture argument."))
+      }
+    }
+  }
+}
+
 
 # # Check that any recaptured fish that were previously tagged in the same lake have a reasonable size
 # recaptured <- x %>%

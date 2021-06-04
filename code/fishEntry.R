@@ -254,6 +254,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                     is = fishInfoIS)
     checkForNew(colName = "clipApply", tc = toCompile, db = fishInfoDB, 
                 is = fishInfoIS, f = force_clipApply)
+    checkClipRecapture(new = newFI, db = fishInfoDB, is = fishInfoIS, 
+                       f = force_clipRecapture)
     
 
     checkForRepeats(colName = "pitApply", tc = toCompile, db = fishInfoDB,
