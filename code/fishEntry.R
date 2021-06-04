@@ -201,15 +201,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                                                       tochar(fishDietsNEW))}
     }
     
-    # Update tables with new entries ------------------------------------------
-    fishInfoIS <- bind_rows(tochar(fishInfoIS), tochar(newFI))
-    fishSamplesIS <- bind_rows(tochar(fishSamplesIS), tochar(newFS))
-    fishOtolithsLOG <- bind_rows(tochar(fishOtolithsLOG), tochar(newFO))
-    fishSpinesLOG <- bind_rows(tochar(fishSpinesLOG), tochar(newFP))
-    fishScalesLOG <- bind_rows(tochar(fishScalesLOG), tochar(newFC))
-    fishDietsLOG <- bind_rows(tochar(fishDietsLOG), tochar(newFD))
-    
     # Run checks --------------------------------------------------------------
+    # Note that I run these checks *before* adding the new compiled data to the in-season database. Otherwise, I'd have to separate out the new IS data from the old IS data in every check function, which is super tedious.
     # XXX sort checks by which data frame (fish samples, fish info) they're checking
     checkForNew(colName = "lakeID", tc = toCompile, db = lakesDB, 
                 is = fishSamplesIS, 
@@ -265,7 +258,14 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                  f = force_pitLake, type = "pit")
     clipTagLakeCheck(tc = toCompile, db = fishInfoDB, is = fishInfoIS,
                  f = force_floyLake, type = "floy")
-
+    
+    # Update tables with new entries ------------------------------------------
+    fishInfoIS <- bind_rows(tochar(fishInfoIS), tochar(newFI))
+    fishSamplesIS <- bind_rows(tochar(fishSamplesIS), tochar(newFS))
+    fishOtolithsLOG <- bind_rows(tochar(fishOtolithsLOG), tochar(newFO))
+    fishSpinesLOG <- bind_rows(tochar(fishSpinesLOG), tochar(newFP))
+    fishScalesLOG <- bind_rows(tochar(fishScalesLOG), tochar(newFC))
+    fishDietsLOG <- bind_rows(tochar(fishDietsLOG), tochar(newFD))
     
     # write updates to files
     write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 
