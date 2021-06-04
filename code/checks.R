@@ -159,24 +159,19 @@ vonB <- function(Linf, K, t0){
 
 # checkForNew -------------------------------------------------------------
 # Check function that can be used to check if you're introducing any new values
-checkForNew <- function(colName, tc, db, is, f = NULL){
+checkForNew <- function(colName, new, db, is, f = NULL){
   # Get values previously used in the database
   dbVals <- db %>% pull({{colName}}) %>% unique()
   
-  # Separate out the new data
-  newData <- is %>%
-    filter(entryFile %in% tc)
-  
   # Get values previously used in the in-season table (but not including the current entry)
   isVals <- is %>% 
-    filter(!entryFile %in% tc) %>%
     pull({{colName}}) %>% unique()
   
   # Put them together
   previousVals <- c(dbVals, isVals)
   
   # Find problem rows in newData (i.e. those that have new vals)
-  problemRows <- newData %>%
+  problemRows <- new %>%
     filter(!.data[[colName]] %in% previousVals) %>%
     select({{colName}}, entryFile) %>%
     distinct()
