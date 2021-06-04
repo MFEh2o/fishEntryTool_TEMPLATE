@@ -40,6 +40,14 @@ getCurData <- function(d = cur){
     setNames(., d[18,]) %>%
     mutate(across(c("fishNum", "fishLength", "fishWeight"), as.numeric))
   
+  curData <- curData[-which(is.na(curData$fishLength) & is.na(curData$otu)),]
+  
+  # Change name from 'species' to 'otu' if needed
+  if("species" %in% names(curData)){
+    curData <- curData %>%
+      rename("otu" = species)
+  }
+  
   return(curData)
 }
 

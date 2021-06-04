@@ -9,6 +9,7 @@ options(warning.length = 6000L, error.length = 6000L)
 library(tidyverse)
 library(here)
 library(checkmate)
+library(janitor)
 source(here("code", "supportingFuns.R"))
 source(here("code", "checks.R"))
 
@@ -82,6 +83,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     for(i in 1:length(toCompile)){
       # Save the file name as a variable `file` for future use
       file <- toCompile[i]
+      message(paste0("Compiling file ", i, ": ", file))
       
       # Read in the current file, setting all blank cells to NA
       cur <- read.csv(here("sampleSheets", file), 
@@ -91,14 +93,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       header <- getHeader(cur)
       
       # Check for NA or empty strings in the header, taking into account whether a value for distanceShocked is expected. Regardless of gear, comments are allowed to be NA.
-      checkHeader(header)
+      checkHeader(header) # XXX should catch the weird date formats here
       
       # Tabular data
       curData <- getCurData(cur)
-      if("species" %in% names(curData)){
-        curData <- curData %>%
-          rename("otu" = species)
-      }
       
       #need to be sure that the column names in the entry template are the same as in the database 
       #(change datasheet to match this too); then ones that aren't in curData colnames, get NA and
@@ -129,9 +127,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       fishInfoNEW <- convertSpeciesAbbreviations(x = fishInfoNEW, fn = fishNames)
       
       # Convert the tag columns to match the new format
-      ## First, check to make sure all tags are either "pit" or "floy" or force a correction.
-      checkTagApply(fishInfoNEW)
-      checkTagRecap(fishInfoNEW)
+      ## First, basic checks on tag types and numbers
+      checkTag(fishInfoNEW, type = "apply")
+      checkTag(fishInfoNEW, type = "recapture")
+      #checkTagRecap(fishInfoNEW)
       assertAtomic(fishInfoNEW$fishID, unique = TRUE) # make sure all the fishID's are unique
       
       tags <- fishInfoNEW %>% # XXX for now I'm going to assume that oldTag isn't useful and can be removed from the sample sheet. But I'll definitely have to revisit this if it turns out that oldTag is actually used.
@@ -329,11 +328,11 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                     is = fishInfoIS, na.ok = T, f = force_pitApply)
     checkForRepeats(colName = "floyApply", tc = toCompile, db = fishInfoDB,
                     is = fishInfoIS, na.ok = T, f = force_floyApply)
-    tagLakeCheck(tc = toCompile, db = fishInfoDB, is = fishInfoIS,
+    clipTagLakeCheck(tc = toCompile, db = fishInfoDB, is = fishInfoIS,
                  f = force_clipLake, type = "clip")
-    tagLakeCheck(tc = toCompile, db = fishInfoDB, is = fishInfoIS,
+    clipTagLakeCheck(tc = toCompile, db = fishInfoDB, is = fishInfoIS,
                  f = force_pitLake, type = "pit")
-    tagLakeCheck(tc = toCompile, db = fishInfoDB, is = fishInfoIS,
+    clipTagLakeCheck(tc = toCompile, db = fishInfoDB, is = fishInfoIS,
                  f = force_floyLake, type = "floy")
 
     
