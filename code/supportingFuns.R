@@ -4,7 +4,7 @@
 # Packages ----------------------------------------------------------------
 library(tidyverse)
 
-# getHeaderInfo -----------------------------------------------------------
+# getHeader ---------------------------------------------------------------
 getHeader <- function(d = cur){
   header <- d[1:17, 1:2] %>%
     setNames(., c("key", "value")) %>%
@@ -16,7 +16,7 @@ getHeader <- function(d = cur){
   names(header) <- str_replace(names(header), "UseCPUE", "useCPUE")
   
   # Check date formats (this will allow the date to parse correctly in the next step)
-  pat <- "^[0-9]{1,2}\\/[0-9]{1,2}\\/[0-9]{2,4}\\s[0-9]{2}:[0-9]{2}$"
+  pat <- "^[0-9]{1,2}\\/[0-9]{1,2}\\/[0-9]{2,4}\\s[0-9]{1,2}:[0-9]{2}$"
   assertCharacter(header$dateTimeSet, pattern = pat)
   assertCharacter(header$dateTimeSample, pattern = pat)
   
@@ -117,6 +117,7 @@ makeFishInfoNEW <- function(d = curData, h = header, dss = dateSampleString, tss
            fishNum = as.numeric(fishNum),
            fishID = paste(sampleID, fishNum, sep = "_"),
            entryFile = f)
+  assertNumeric(fishInfoNEW$fishNum, any.missing = F)
   return(fishInfoNEW)
 }
 
@@ -131,11 +132,11 @@ convertTagColumns <- function(fin = fishInfoNEW){
   assertSubset(fin$tagRecaptureType, choices = c("pit", "floy", NA))
   
   # Check that all rows that have a tag value also have a tag type
-  missingTypeApply <- x %>%
+  missingTypeApply <- fin %>%
     filter(is.na(tagApplyType), !is.na(tagApply)) %>%
     select("fishID", tagApplyType, tagApply)
     
-  missingTypeRecapture <- x %>%
+  missingTypeRecapture <- fin %>%
     filter(is.na(tagRecaptureType), !is.na(tagRecapture)) %>%
     select("fishID", tagRecaptureType, tagRecapture)
   
@@ -152,11 +153,11 @@ convertTagColumns <- function(fin = fishInfoNEW){
   }
   
   # Check that all rows that have a tag type also have a tag value
-  missingTagApply <- x %>%
+  missingTagApply <- fin %>%
     filter(is.na(tagApply), !is.na(tagApplyType)) %>%
     select("fishID", tagApplyType, tagApply)
   
-  missingTagRecapture <- x %>%
+  missingTagRecapture <- fin %>%
     filter(is.na(tagRecapture), !is.na(tagRecaptureType)) %>%
     select("fishID", tagRecaptureType, tagRecapture)
   
