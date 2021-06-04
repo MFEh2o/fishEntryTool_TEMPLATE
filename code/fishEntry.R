@@ -54,15 +54,19 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
   fishSamplesDB <- suppressWarnings(dbTable("fish_samples"))
   fishInfoDB <- suppressWarnings(dbTable("fish_info"))
   otu <- suppressWarnings(dbTable("otu"))
+  
+  # Grab all the 'fish' from OTU, for use in converting abbreviations to species names
   fishNames <- otu %>% filter(grouping == "fish")
   
-  # Load in-season database files, or initialize them
+  # Load in-season database files, or initialize them if they don't already exist
+  ## FISH_INFO
   if("fishInfoIS.csv" %in% list.files(isdir)){
     fishInfoIS <- read.csv(here(isdir, "fishInfoIS.csv"), 
                            header = T, stringsAsFactors = F)
   }else{
     fishInfoIS <- fishInfoDB[FALSE, ]
   }
+  ## FISH_SAMPLES
   if("fishSamplesIS.csv" %in% list.files(isdir)){
     fishSamplesIS <- read.csv(here(isdir, "fishSamplesIS.csv"), 
                               header = T, stringsAsFactors = F)
@@ -72,11 +76,11 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
   
   # Check which files have been compiled and which have not in the directory
   beenCompiled <- unique(fishInfoIS$entryFile)
-  toCompile <- list.files(path = here("sampleSheets"), 
+  filenames <- list.files(path = here("sampleSheets"), 
                           pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}\\.csv")
-  toCompile <- toCompile[!toCompile %in% beenCompiled]
+  toCompile <- filenames[!filenames %in% beenCompiled]
   
-  # Initialize data frames to hold just the new FISH_INFO and FISH_SAMPLES data, to make checks easier (so we don't have to re-separate everything once it's joined to fishInfoIS and fishSamplesIS.)
+  # Initialize data frames to hold the new FISH_INFO and FISH_SAMPLES data
   newFI <- data.frame() # info
   newFS <- data.frame() # samples
   newFO <- data.frame() # otoliths

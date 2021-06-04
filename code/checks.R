@@ -52,44 +52,6 @@ checkHeader <- function(h = header){
   assertCharacter(as.character(header$dateSample), pattern = pat_date)
 }
 
-# checkTagRecap -----------------------------------------------------------
-checkTagRecap <- function(x, db, is){
-  assertDataFrame(x)
-  assertSubset(c("tagRecapture", "tagRecaptureType"), names(x))
-  
-  # Combine database and in-season data into 'previous' data
-  previous <- bind_rows(db, is)
-  
-  # Check that all values in tagRecapturetype are either "pit", "floy" or NA
-  if(!all(x$tagRecaptureType %in% c(NA, "pit", "floy"))){
-    problemRows <- x %>%
-      filter(!tagRecaptureType %in% c(NA, "pit", "floy")) %>%
-      select(fishID, entryFile, tagRecaptureType) %>%
-      distinct()
-    stop(paste0("tagRecaptureType must be 'pit', 'floy', or NA. The offending rows are:\n\n",
-                paste0(capture.output(problemRows), collapse = "\n"),
-                "\n\nYou must correct the value on the sample sheet in order for the entry tool to run."))
-  }
-  
-  # Check that all rows that have a tag value also have a tag type
-  missingType <- x %>%
-    filter(is.na(tagRecaptureType), !is.na(tagRecapture))
-  if(nrow(missingType) > 0){
-    stop(paste0("At least one fish has a tag number but no tagRecaptureType. The offending rows are:\n\n",
-                paste0(capture.output(missingType), collapse = "\n"),
-                "\n\nYou must provide a tag type in order for the entry tool to run."))
-  }
-  
-  # Check that all rows that have a tag type also have a tag value
-  missingTag <- x %>%
-    filter(is.na(tagRecapture), !is.na(tagRecaptureType))
-  if(nrow(missingTag) > 0){
-    stop(paste0("At least one fish has a tagRecaptureType but no tag number. The offending rows are:\n\n",
-                paste0(capture.output(missingTag), collapse = "\n"),
-                "\n\nYou must provide a tag number in order for the entry tool to run. If the tag was unreadable or you didn't record the tag number, please write 'unknown'."))
-  }
-}
-
 # vonBertalanffy ----------------------------------------------------------
 vonB <- function(Linf, K, t0){
   
@@ -192,11 +154,6 @@ vonB <- function(Linf, K, t0){
 #     }
 #   }
 # }
-
-
-
-
-
 
 # Checks at the end against the in-season database and full database ----------
 
