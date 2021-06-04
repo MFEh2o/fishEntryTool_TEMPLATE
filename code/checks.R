@@ -227,14 +227,10 @@ checkForRepeats <- function(colName, new, db, is, na.ok = F, f = NULL){
 
 # checkRangeLimits --------------------------------------------------------
 # Default is to define problem values as anything <= minVal and >= maxVal. If allowMinEqual = T, then only < minVal is a problem; if allowMaxEqual = T, then only > maxVal is a problem.
-checkRangeLimits <- function(colName, is, tc, f, minVal, maxVal, 
+checkRangeLimits <- function(colName, new, f, minVal, maxVal, 
                              allowMinEqual = F, allowMaxEqual = F){
-  # Get new data
-  newData <- is %>%
-    filter(entryFile %in% tc)
-  
   # Isolate problem rows
-  problemRows <- newData %>%
+  problemRows <- new %>%
     {if(allowMinEqual){
       filter(., {{colName}} < minVal)
     }else{
@@ -256,17 +252,13 @@ checkRangeLimits <- function(colName, is, tc, f, minVal, maxVal,
 }
 
 # checkDateTimes ----------------------------------------------------------
-checkDateTimes <- function(is, tc){
-  # Get new data
-  newData <- is %>%
-    filter(entryFile %in% tc)
-  
+checkDateTimes <- function(new){
   # dateSet must be the same or earlier than dateSample
-  problemRowsDate <- newData %>%
+  problemRowsDate <- new %>%
     filter(as.Date(dateSample) < as.Date(dateSet))
   
   # dateTimeSet must be the same or earlier than dateTimeSample
-  problemRowsDateTime <- newData %>%
+  problemRowsDateTime <- new %>%
     filter(strptime(dateTimeSample, 
                     format = "%m/%d%Y %H:%M:%S") < 
              strptime(dateTimeSet, 
@@ -285,25 +277,15 @@ checkDateTimes <- function(is, tc){
 
 # checkDuplicateFishIDs --------------------------------------------------
 # Can't use checkForRepeats on this one because we care about *all* the rows, not just comparing new to old.
-checkDuplicateFishIDs <- function(is, db, tc){
-  # Get db fishIDs
-  dbIDs <- db %>%
-    pull(fishID)
-  
-  # Get previously-entered in-season fishIDs
-  oldIS <- is %>%
-    filter(!entryFile %in% tc) %>%
-    pull(fishID)
-  
-  # Get newly-entered fishIDs
-  newIS <- is %>%
-    filter(entryFile %in% tc) %>%
-    pull(fishID)
+checkDuplicateFishIDs <- function(is, db){
+  # Get fishID's
+  dbIDs <- db$fishID # database
+  isIDs <- is$fishID # in-season
+  newIDs <- new$fishID # new
   
   # Check whether there are internal duplicates in the data you're entering
-  if(any(duplicated(newIS))){
-    problemRows <- is %>%
-      filter(entryFile %in% tc) %>%
+  if(any(duplicated(newIDs))){
+    problemRows <- new %>%
       group_by(fishID) %>%
       filter(n() > 1) %>%
       arrange(fishID) %>%
@@ -313,9 +295,8 @@ checkDuplicateFishIDs <- function(is, db, tc){
   }
   
   # Check whether any of the fishID's that you're trying to enter already appear in the database
-  if(any(newIS %in% dbIDs)){
-    problemRows <- is %>%
-      filter(entryFile %in% tc) %>%
+  if(any(newIDs %in% dbIDs)){
+    problemRows <- new %>%
       filter(fishID %in% dbIDs) %>%
       select(fishID, entryFile)
     stop(paste0("You're trying to enter fishID's that are already present in the FISH_INFO database table. The problem rows are:\n\n",
@@ -323,10 +304,9 @@ checkDuplicateFishIDs <- function(is, db, tc){
   }
   
   # Check whether any of the fishID's that you're trying to enter already appear in the in-season database
-  if(any(newIS %in% oldIS)){
-    problemRows <- is %>%
-      filter(entryFile %in% tc) %>%
-      filter(fishID %in% oldIS) %>%
+  if(any(newIDs %in% isIDs)){
+    problemRows <- new %>%
+      filter(fishID %in% isIDs) %>%
       select(fishID, entryFile)
     stop(paste0("You're trying to enter fishID's that are already present in the FISH_INFO in-season database. The problem rows are:\n\n",
                 paste0(capture.output(problemRows), collapse = "\n")))
@@ -334,47 +314,51 @@ checkDuplicateFishIDs <- function(is, db, tc){
 }
 
 # checkFishLengthWeight ---------------------------------------------------
-checkFishLengthWeight <- function(db, tc, is, fl, fw){
-  # Get only the newly-entered fish
-  new <- is %>%
-    filter(entryFile %in% tc)
-  
+checkFishLengthWeight <- function(new, db, is, fl, fw){
   # Throw an error for fish weights or lengths that are 0 or negative.
   problemRows <- new %>%
-    filter(fishLength <= 0|fishWeight <= 0) %>%
+    filter(fishLength <= 0|fishLength >= 1500|fishWeight <= 0|fishWeight >= 1200) %>%
     select(fishID, fishLength, fishWeight, entryFile)
+  
   if(nrow(problemRows) > 0){
-    stop(paste0("You are trying to enter 0 or negative lengths or weights for the following fish:\n\n",
+    stop(paste0("Some of your length and/or weight measurements seem fishy:\n\n",
                 paste0(capture.output(problemRows), collapse = "\n"),
-                "\n\nPlease double-check your lengths and weights. If you don't have length/weight information, leave these values as blank or NA, not 0."))
+                "\n\nfishLength should be > 0 and < 1500 mm. fishWeight should be > 0 and less than 1200 g. Double-check your lengths and weights for typos or incorrect units. If length or weight information is missing, leave these values as NA, NOT 0."))
   }
   
   # Get a list of all the unique species being entered
-  species <- new %>%
-    pull(otu) %>%
-    unique()
+  species <- unique(new$otu)
   
   # Check each species for length
   purrr::walk(.x = species, .f = function(x, ...){
-    # Get all fish of this species in the database that have length measurements
-    curDB <- db %>% filter(otu == x, !is.na(fishLength), fishLength > 0)
+    # Fish we want to check: any new fish that have length measurements.
     curNEW <- new %>% filter(otu == x, !is.na(fishLength)) %>%
       select(fishID, otu, fishLength, fishWeight)
+    
+    # Get all fish of this species in the database that have length measurements
+    curDB <- db %>% filter(otu == x, !is.na(fishLength), fishLength > 0)
+    
+    # Check length only if there are at least 15 previous measurements for this species
     if(nrow(curDB) < 15){
       warning(paste0("We have <15 observations for length of species ", x, ", so we won't run an automated fishLength check. Be sure to double-check the lengths you've entered."))
     }else{
+      # Compute mean and sd for the species
       mn <- mean(curDB$fishLength, na.rm = T)
       sd <- sd(curDB$fishLength, na.rm = T)
-      tooLong <- curNEW %>%
-        filter(as.numeric(fishLength) > mn + 3*sd)
-      tooShort <- curNEW %>%
-        filter(as.numeric(fishLength) < mn - 3*sd)
+      
+      # Find fish that are too short or too long
+      tooLong <- curNEW %>% filter(as.numeric(fishLength) > mn + 3*sd)
+      tooShort <- curNEW %>% filter(as.numeric(fishLength) < mn - 3*sd)
+      
+      # Throw error for too long
       if(nrow(tooLong) > 0){
         if(fl == FALSE){
           stop(paste0("Found some fish that are longer than 3 sd above the mean for their species, ", x, ". They are:\n\n",
                       paste0(capture.output(tooLong), collapse = "\n")))
         }
       }
+      
+      # Throw error for too short
       if(nrow(tooShort) > 0){
         if(fl == FALSE){
           stop(paste0("Found some fish that are shorter than 3 sd below the mean for their species, ", x, ". They are:\n\n",
@@ -383,15 +367,19 @@ checkFishLengthWeight <- function(db, tc, is, fl, fw){
       }
     }
     
-    # Now, limit the database subset down to just the ones that also have weight measurements.
+    # Now, only fish that have length AND weight measurements
     curDB_weight <- curDB %>%
       filter(!is.na(fishWeight), fishWeight > 0)
+    
+    # Do a length-weight regression if there are at least 15 fish
     if(nrow(curDB_weight) < 15){
       warning(paste0("We have <15 observations for weight of species ", x, ", so we won't run an automated length-weight regression. Be sure to double-check the weights you've entered."))
     }else{
+      # Length-weight regression for this species (log-transformed)
       curDB_weight$logWeight <- log(curDB_weight$fishWeight)
       curDB_weight$logLength <- log(curDB_weight$fishLength)
       lwreg <- lm(logWeight ~ logLength, data = curDB_weight)
+      
       # Predict high and low weight bounds for each individual
       preds <- predict(lwreg, newdata = 
                          data.frame(logLength = 
@@ -400,18 +388,20 @@ checkFishLengthWeight <- function(db, tc, is, fl, fw){
                        se.fit = TRUE, level = 0.99)
       curNEW$predsLow <- exp(preds$fit[,2])
       curNEW$predsHigh <- exp(preds$fit[,3])
-      # Are any of the newly-entered fish weights < predsLow or > predsHigh...
-      tooHeavy <- curNEW %>%
-        filter(as.numeric(fishWeight) > predsHigh)
-      tooLight <- curNEW %>%
-        filter(as.numeric(fishWeight) < predsLow)
       
+      # Are any of the newly-entered fish weights < predsLow or > predsHigh...
+      tooHeavy <- curNEW %>% filter(as.numeric(fishWeight) > predsHigh)
+      tooLight <- curNEW %>% filter(as.numeric(fishWeight) < predsLow)
+      
+      # Throw error for heavy fish
       if(nrow(tooHeavy) > 0){
         if(fw == FALSE){
           stop(paste0("You report fishWeight heavier than the prediction based on a length-weight regression from our database for ", x, ". Here are the problematic rows:\n\n",
                       paste0(capture.output(tooHeavy), collapse = "\n")))
         }
       }
+      
+      # Throw error for light fish
       if(nrow(tooLight) > 0){
         if(fw == FALSE){
           stop(paste0("You report fishWeight lighter than the prediction based on a length-weight regression from our database for ", x, ". Here are the problematic rows:\n\n",
