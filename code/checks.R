@@ -257,17 +257,17 @@ checkDateTimes <- function(new){
   problemRowsDate <- new %>%
     filter(as.Date(dateSample) < as.Date(dateSet))
   
+  # Error message for dateSet/dateSample
+  if(nrow(problemRowsDate) > 0){
+    stop("In the following sample sheets, the dateSample is earlier than the dateSet:\n\n", paste0(capture.output(problemRowsDate), collapse = "\n"))
+  }
+  
   # dateTimeSet must be the same or earlier than dateTimeSample
   problemRowsDateTime <- new %>%
     filter(strptime(dateTimeSample, 
                     format = "%m/%d%Y %H:%M:%S") < 
              strptime(dateTimeSet, 
                       format = "%m/%d%Y %H:%M:%S"))
-  
-  # Error message for dateSet/dateSample
-  if(nrow(problemRowsDate) > 0){
-    stop("In the following sample sheets, the dateSample is earlier than the dateSet:\n\n", paste0(capture.output(problemRowsDate), collapse = "\n"))
-  }
   
   # Error message for dateTimeSet/dateTimeSample
   if(nrow(problemRowsDateTime) > 0){
@@ -315,15 +315,19 @@ checkDuplicateFishIDs <- function(is, db){
 
 # checkFishLengthWeight ---------------------------------------------------
 checkFishLengthWeight <- function(new, db, is, fl, fw){
+  new <- new %>% mutate(across(c("fishLength", "fishWeight"), as.numeric))
+  db <- db %>% mutate(across(c("fishLength", "fishWeight"), as.numeric))
+  is <- is %>% mutate(across(c("fishLength", "fishWeight"), as.numeric))
+  
   # Throw an error for fish weights or lengths that are 0 or negative.
   problemRows <- new %>%
-    filter(fishLength <= 0|fishLength >= 1500|fishWeight <= 0|fishWeight >= 1200) %>%
+    filter(fishLength <= 0|fishWeight <= 0) %>%
     select(fishID, fishLength, fishWeight, entryFile)
   
   if(nrow(problemRows) > 0){
-    stop(paste0("Some of your length and/or weight measurements seem fishy:\n\n",
+    stop(paste0("You are reporting fishLength or fishWeight values that are 0 or negative:\n\n",
                 paste0(capture.output(problemRows), collapse = "\n"),
-                "\n\nfishLength should be > 0 and < 1500 mm. fishWeight should be > 0 and less than 1200 g. Double-check your lengths and weights for typos or incorrect units. If length or weight information is missing, leave these values as NA, NOT 0."))
+                "\n\nLengths and weights can't be 0 or negative. If these measurements are not available, leave them as NA, NOT 0."))
   }
   
   # Get a list of all the unique species being entered
@@ -347,8 +351,8 @@ checkFishLengthWeight <- function(new, db, is, fl, fw){
       sd <- sd(curDB$fishLength, na.rm = T)
       
       # Find fish that are too short or too long
-      tooLong <- curNEW %>% filter(as.numeric(fishLength) > mn + 3*sd)
-      tooShort <- curNEW %>% filter(as.numeric(fishLength) < mn - 3*sd)
+      tooLong <- curNEW %>% filter(fishLength > mn + 3*sd)
+      tooShort <- curNEW %>% filter(fishLength < mn - 3*sd)
       
       # Throw error for too long
       if(nrow(tooLong) > 0){
@@ -383,15 +387,15 @@ checkFishLengthWeight <- function(new, db, is, fl, fw){
       # Predict high and low weight bounds for each individual
       preds <- predict(lwreg, newdata = 
                          data.frame(logLength = 
-                                      log(as.numeric(curNEW$fishLength))),
+                                      log(curNEW$fishLength)),
                        interval = "prediction",
                        se.fit = TRUE, level = 0.99)
       curNEW$predsLow <- exp(preds$fit[,2])
       curNEW$predsHigh <- exp(preds$fit[,3])
       
       # Are any of the newly-entered fish weights < predsLow or > predsHigh...
-      tooHeavy <- curNEW %>% filter(as.numeric(fishWeight) > predsHigh)
-      tooLight <- curNEW %>% filter(as.numeric(fishWeight) < predsLow)
+      tooHeavy <- curNEW %>% filter(fishWeight > predsHigh)
+      tooLight <- curNEW %>% filter(fishWeight < predsLow)
       
       # Throw error for heavy fish
       if(nrow(tooHeavy) > 0){
@@ -410,6 +414,17 @@ checkFishLengthWeight <- function(new, db, is, fl, fw){
       }
     }
   })
+  
+  # Throw an error for fish weights or lengths that are heavier than expected (this will catch anything where there were <15 fish, or anything that's off the charts for both length and weight but theoretically reasonable according to the regression)
+  tooLarge <- new %>%
+    filter(fishLength >= 1500|fishWeight >= 12000) %>%
+    select(fishID, fishLength, fishWeight, entryFile)
+  
+  if(nrow(tooLarge) > 0){
+    stop(paste0("Some of your length and/or weight measurements seem fishy:\n\n",
+                paste0(capture.output(tooLarge), collapse = "\n"),
+                "\n\nfishLength should be < 1500 mm, and fishWeight should be < 12000 g. Double-check your lengths and weights for typos or incorrect units."))
+  }
 }
 
 # lakeSpeciesCheck ------------------------------------------------------------
