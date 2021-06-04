@@ -10,6 +10,7 @@ library(tidyverse)
 library(here)
 library(checkmate)
 library(janitor)
+library(lubridate)
 source(here("code", "supportingFuns.R"))
 source(here("code", "checks.R"))
 
@@ -93,90 +94,35 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       header <- getHeader(cur)
       
       # Check for NA or empty strings in the header, taking into account whether a value for distanceShocked is expected. Regardless of gear, comments are allowed to be NA.
-      checkHeader(header) # XXX should catch the weird date formats here
+      checkHeader(header)
       
       # Tabular data
       curData <- getCurData(cur)
       
-      #need to be sure that the column names in the entry template are the same as in the database 
-      #(change datasheet to match this too); then ones that aren't in curData colnames, get NA and
-      #others will match
-      # XXX come back to this.
-      
       # Get date and time strings for sampleID's and fishID's
-      dateSampleString <- strftime(strptime(header$dateTimeSample, 
-                                            format = "%m/%d/%Y %H:%M:%S"), 
-                                   format = "%Y%m%d")
-      timeSampleString <- strftime(strptime(header$dateTimeSample, 
-                                            format = "%m/%d/%Y %H:%M:%S"), 
-                                   format = "%H%M")
-      # XXX will need lots of checks here, and in the getHeader function too.
-      
-      # Make new rows for FISH_INFO # XXX this can be its own function
-      fishInfoNEW <- curData %>%
-        mutate(projectID = header$projectID,
-               metadataID = header$metadataID,
-               sampleID = paste(header$lakeID, header$siteName, dateSampleString,
-                                timeSampleString, header$gear, metadataID, 
-                                sep = "_"),
-               fishNum = as.numeric(fishNum),
-               fishID = paste(sampleID, fishNum, sep = "_"),
-               entryFile = file)
+      dateSampleString <- date(header$dateTimeSample) %>% str_remove_all(., "-")
+      timeSampleString <- paste0(hour(header$dateTimeSample), minute(header$dateTimeSample))
+
+      # Make new rows for FISH_INFO
+      fishInfoNEW <- makeFishInfoNEW(d = curData, h = header, 
+                                     dss = dateSampleString, 
+                                     tss = timeSampleString, f = file)
       
       # Convert species abbreviations to common names
       fishInfoNEW <- convertSpeciesAbbreviations(x = fishInfoNEW, fn = fishNames)
       
       # Convert the tag columns to match the new format
       ## First, basic checks on tag types and numbers
-      checkTag(fishInfoNEW, type = "apply")
-      checkTag(fishInfoNEW, type = "recapture")
+      #checkTag(fishInfoNEW, type = "apply") # XXX come back to this
+      #checkTag(fishInfoNEW, type = "recapture") # XXX come back to this
       #checkTagRecap(fishInfoNEW)
       assertAtomic(fishInfoNEW$fishID, unique = TRUE) # make sure all the fishID's are unique
       
-      tags <- fishInfoNEW %>% # XXX for now I'm going to assume that oldTag isn't useful and can be removed from the sample sheet. But I'll definitely have to revisit this if it turns out that oldTag is actually used.
-        select(tagApply, tagRecapture, tagApplyType, tagRecaptureType, oldTag, fishID) %>%
-        mutate(pitApply = case_when(!is.na(tagApply) & tagApplyType == "pit" ~ tagApply,
-                                    TRUE ~ NA_character_),
-               floyApply = case_when(!is.na(tagApply) & tagApplyType == "floy" ~ tagApply,
-                                     TRUE ~ NA_character_),
-               pitRecapture = case_when(!is.na(tagRecapture) & tagRecaptureType == "pit" ~
-                                          tagRecapture,
-                                        TRUE ~ NA_character_),
-               floyRecapture = case_when(!is.na(tagRecapture) & tagRecaptureType == "floy" ~
-                                           tagRecapture,
-                                         TRUE ~ NA_character_)) %>%
-        select(-oldTag) %>%
-        select(-c(tagApply, tagRecapture, tagApplyType, tagRecaptureType))
-      
-      fishInfoNEW <- fishInfoNEW %>%
-        select(-c(oldTag, tagApply, tagRecapture, tagApplyType, tagRecaptureType)) %>%
-        left_join(tags, by = "fishID")
+      fishInfoNEW <- convertTagColumns(fin = fishInfoNEW)
         
-      # generate FISH_SAMPLES rows # XXX this can be its own function
-      fishSamplesNEW <- data.frame(key = names(header),
-                                   value = unname(unlist(header))) %>%
-        pivot_wider(names_from = key, values_from = value) %>%
-        mutate(siteID = paste(lakeID, siteName, sep = "_"),
-               sampleID = paste(siteID, dateSampleString, timeSampleString,
-                                gear, metadataID, sep = "_"),
-               dayOfYear = as.numeric(strftime(strptime(dateSample,
-                                                        format = "%Y-%m-%d"),
-                                               format = "%j")),
-               entryFile = file,
-               projectID = header$projectID,
-               lakeID = header$lakeID,
-               dataRecorder = header$dataRecorder,
-               dataEnteredBy = header$dataEnteredBy,
-               updateID = header$updateID) %>%
-        select(-siteName)
-      
-      # Add nAnglers column based on crew only if effortUnits == angler_hours. 
-      # checkHeader function has already validated crew and effortUnits.
-      fishSamplesNEW <- fishSamplesNEW %>%
-        mutate(nAnglers = case_when(effortUnits == "angler_hours" ~ 
-                                      as.character(length(unlist(strsplit(fishSamplesNEW$crew, split = ", ")))),
-                                    TRUE ~ NA_character_)) %>%
-        relocate(nAnglers, .after = "effortUnits")
+      # generate FISH_SAMPLES rows
+      fishSamplesNEW <- makeFishSamplesNEW(h = header, dss = dateSampleString, 
+                                           tss = timeSampleString, f = file)
       
       # Check for otoliths pulled and generate a log of fish otoliths
       if("otolithSample" %in% names(curData)){
@@ -187,23 +133,12 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
             fishOtolithsLOG <- read.csv(here(isdir, "fishOtolithsLOG.csv"), 
                                         header = T, stringsAsFactors = F)
             # Else, create a log
-          }else{
-            fishOtolithsLOG <- data.frame()
-          }
-          
-          # Make the data for FISH_OTOLITHS # XXX this can be its own function
-          fishOtolithsNEW <- curData %>%
-            filter(otolithSample == 1) %>%
-            select(fishNum, fishLength, fishWeight) %>%
-            mutate(fishID = paste(header$lakeID, header$siteName, dateSampleString,
-                                  timeSampleString, header$gear, header$metadataID,
-                                  fishNum, sep = "_"),
-                   otolithWeight = NA) %>%
-            rename("lengthAtCapture" = fishLength,
-                   "weightAtCapture" = fishWeight)
+          }else{fishOtolithsLOG <- data.frame()}
+          fishOtolithsNEW <- makeFishOtolithsNEW(d = curData, h = header,
+                                                 dss = dateSampleString,
+                                                 tss = timeSampleString)
         }
       }
-      
       
       # Check for spines pulled and generate a log of fish spines
       if("spineSample" %in% names(curData)){
@@ -211,17 +146,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
           if("fishSpinesLOG.csv" %in% list.files(isdir)){
             fishSpinesLOG <- read.csv(here(isdir, "fishSpinesLOG.csv"),
                                       header = T, stringsAsFactors = F)
-          }else{
-            fishSpinesLOG <- data.frame()
-          }
-          fishSpinesNEW <- curData %>%
-            filter(spineSample == 1) %>%
-            select(fishNum, fishLength, fishWeight) %>%
-            mutate(fishID = paste(header$lakeID, header$siteName, dateSampleString,
-                                  timeSampleString, header$gear, header$metadataID,
-                                  fishNum, sep = "_")) %>%
-            rename("lengthAtCapture" = fishLength,
-                   "weightAtCapture" = fishWeight)
+          }else{fishSpinesLOG <- data.frame()}
+          fishSpinesNEW <- makeFishSpinesNEW(d = curData, h = header, 
+                                             dss = dateSampleString, 
+                                             tss = timeSampleString)
         }
       }
       
@@ -231,17 +159,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
           if("fishScalesLOG.csv" %in% list.files(isdir)){
             fishScalesLOG <- read.csv(here(isdir, "fishScalesLOG.csv"),
                                       header = T, stringsAsFactors = F)
-          }else{
-            fishScalesLOG <- data.frame()
-          }
-          fishScalesNEW <- curData %>%
-            filter(scaleSample == 1) %>%
-            select(fishNum, fishLength, fishWeight) %>%
-            mutate(fishID = paste(header$lakeID, header$siteName, dateSampleString,
-                                  timeSampleString, header$gear, header$metadataID,
-                                  fishNum, sep = "_")) %>%
-            rename("lengthAtCapture" = fishLength,
-                   "weightAtCapture" = fishWeight)
+          }else{fishScalesLOG <- data.frame()}
+          fishScalesNEW <- makeFishScalesNEW(d = curData, h = header, 
+                                             dss = dateSampleString, 
+                                             tss = timeSampleString)
         }
       }
       
@@ -251,17 +172,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
           if("fishDietsLOG.csv" %in% list.files(isdir)){
             fishDietsLOG <- read.csv(here(isdir, "fishDietsLOG.csv"),
                                      header = T, stringsAsFactors = F)
-          }else{
-            fishDietsLOG <- data.frame()
-          }
-          fishDietsNEW <- curData %>%
-            filter(dietSampled == 1) %>%
-            select(fishNum, otu) %>%
-            mutate(fishID = paste(header$lakeID, header$siteName, dateSampleString,
-                                  timeSampleString, header$gear, header$metadataID,
-                                  fishNum, sep = "_"),
-                   lakeID = header$lakeID,
-                   dateSample = header$dateSample)
+          }else{fishDietsLOG <- data.frame()}
+          fishDietsNEW <- makeFishDietsNEW(d = curData, h = header, 
+                                           dss = dateSampleString, 
+                                           tss = timeSampleString)
         }
       }
       
