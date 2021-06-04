@@ -163,9 +163,8 @@ checkForNew <- function(colName, new, db, is, f = NULL){
   # Get values previously used in the database
   dbVals <- db %>% pull({{colName}}) %>% unique()
   
-  # Get values previously used in the in-season table (but not including the current entry)
-  isVals <- is %>% 
-    pull({{colName}}) %>% unique()
+  # Get values previously used in the in-season table
+  isVals <- is %>% pull({{colName}}) %>% unique()
   
   # Put them together
   previousVals <- c(dbVals, isVals)
@@ -195,24 +194,18 @@ checkForNew <- function(colName, new, db, is, f = NULL){
 
 # checkForRepeats ---------------------------------------------------------
 # Check function to make sure you're not introducing any repeat values.
-checkForRepeats <- function(colName, tc, db, is, na.ok = F, f = NULL){
+checkForRepeats <- function(colName, new, db, is, na.ok = F, f = NULL){
   # Get values previously used in the database
   dbVals <- db %>% pull({{colName}}) %>% unique()
   
   # Get values previously used in the in-season table
-  isVals <- is %>% 
-    filter(!entryFile %in% tc) %>%
-    pull({{colName}}) %>% unique()
-  
-  # Get new data
-  newData <- is %>%
-    filter(entryFile %in% tc)
+  isVals <- is %>% pull({{colName}}) %>% unique()
   
   # Put them together
   previousVals <- c(dbVals, isVals)
   
-  # Find problem rows in newData (i.e. those that match/repeat a previous value)
-  problemRows <- newData %>%
+  # Find problem rows in new (i.e. those that match/repeat a previous value)
+  problemRows <- new %>%
     {if(na.ok == T) filter(., !is.na(.data[[colName]])) else .} %>%
     filter(.data[[colName]] %in% previousVals) %>%
     select({{colName}}, entryFile) %>%
@@ -221,11 +214,11 @@ checkForRepeats <- function(colName, tc, db, is, na.ok = F, f = NULL){
   # If there are repeat values, throw an error and print the repeat values
   if(nrow(problemRows) > 0){
     if(is.null(f)){
-      stop(paste0("You are attempting to add ", colName, " values that are already in either the database or the in-season file. Here are the repeat values, and the sample sheets they come from:\n\n",
+      stop(paste0("You are attempting to add ", colName, " values that are already in either the database or the in-season file:\n\n",
                   paste0(capture.output(problemRows), collapse = "\n"),
                   "\n\nFor the fish entry tool to work, all of your ", colName, " values must be unique."))
     }else{
-      stop(paste0("You are attempting to add ", colName, " values that are already in either the database or the in-season file. Here are the repeat values, and the sample sheets they come from:\n\n",
+      stop(paste0("You are attempting to add ", colName, " values that are already in either the database or the in-season file:\n\n",
                   paste0(capture.output(problemRows), collapse = "\n"),
                   "\n\nIf you are sure you're entering the right values, you can use ", deparse(substitute(f)), " to bypass this message and enter the values anyway. But BEWARE! Tell the database manager. The database may not compile correctly if it includes repeat values."))
     }
