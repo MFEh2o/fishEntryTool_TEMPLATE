@@ -231,7 +231,10 @@ makeFishSamplesNEW <- function(h = header, dss = dateSampleString,
                                 TRUE ~ NA_character_)) %>%
     relocate(nAnglers, .after = "effortUnits")
   
-  
+  # Remove leading and trailing spaces from useCPUE
+  fishSamplesNEW$useCPUE <- stringr::str_remove_all(fishSamplesNEW$useCPUE, "\\s$")
+  fishSamplesNEW$useCPUE <- stringr::str_remove_all(fishSamplesNEW$useCPUE, "^\\s")
+
   return(fishSamplesNEW)
 }
 
@@ -296,4 +299,52 @@ makeFishDietsNEW <- function(d = curData, h = header,
   return(fishDietsNEW)
 }
 
+# reverseRegex ------------------------------------------------------------
+rr <- function(vec, unique = F){
+  # Classify each character as uppercase (A), lowercase (a), or digit (0). Leave punctuation marks as they are (because for my use case, different punctuation = different format)
+  classified <- gsub("[0-9]", "0", gsub("[A-Z]", "A", gsub("[a-z]", "a", vec)))
+  
+  if(unique == T){
+    # Get all unique formats
+    unique_formats <- unique(classified)
+    
+    # Return unique formats
+    return(unique_formats)
+  }else{
+    return(classified)
+  }
+}
 
+pits <- c(fishInfoDB$pitApply, fishInfoDB$pitRecapture)
+floys <- c(fishInfoDB$floyApply, fishInfoDB$floyRecapture)
+
+test <- fishInfoDB %>%
+  select(contains("pit"), contains("floy")) %>%
+  pivot_longer(cols = c("pitApply", "pitRecapture", "floyApply", "floyRecapture"), names_to = "type") %>%
+  filter(!is.na(value)) %>%
+  mutate(type = str_remove(type, "Recapture"),
+         type = str_remove(type, "Apply")) %>%
+  distinct() %>%
+  mutate(format = rr(value))
+
+uniqueFormatsPit <- test %>%
+  filter(type == "pit") %>%
+  group_by(format) %>%
+  slice(1)
+
+uniqueFormatsFloy <- test %>%
+  filter(type == "floy") %>%
+  group_by(format) %>%
+  slice(1)
+
+uniqueFormatsPit$alsoFloy <- uniqueFormatsPit$format %in% uniqueFormatsFloy$format
+uniqueFormatsFloy$alsoPit <- uniqueFormatsFloy$format %in% uniqueFormatsPit$format
+
+pitFormatsUnique <- rr(pits, unique = T)
+floyFormatsUnique <- rr(floys, unique = T)
+
+pitFormats
+
+
+floyFormats %in% pitFormats
+pitFormats %in% floyFormats
