@@ -428,47 +428,73 @@ checkFishLengthWeight <- function(new, db, is, fl, fw){
 }
 
 # checkTagRecapture ------------------------------------------------------------
-checkTagRecapture <- function(type, new, db, is, forceNew, forceSpecies, forceLake){
-  # Make sure the 'type' argument is either "pit" or "floy"
-  assertSubset(type, choices = c("pit", "floy"))
+checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
+  message("Checking recaptured tags...")
   
-  # Create column names to use in the rest of the function
-  ap <- paste0(type, "Apply")
-  re <- paste0(type, "Recapture")
-  
-  # Separate out newly-entered data that has *recapture values
-  newData <- new[!is.na(new[,re]),] %>%
-    mutate(lakeID = word(sampleID, 1, 1, sep = "_")) %>%
-    select("fishID", all_of(re), otu)
+  # Reformat the data and get only fish with recaptured tags
+  newData <- new %>%
+    select(fishID, "pit" = pitRecapture, "floy" = floyRecapture, otu) %>%
+    mutate(lakeID = word(fishID, 1, 1, sep = "_")) %>%
+    pivot_longer(cols = c("pit", "floy"),
+                 names_to = "tagRecaptureType",
+                 values_to = "tagRecapture") %>%
+    filter(!is.na(tagRecapture)) %>%
+    mutate(
+      lakeSpeciesTag = paste(lakeID, otu, tagRecapture, sep = "_"),
+      lakeTag = paste(lakeID, tagRecapture, sep = "_"),
+      speciesTag = paste(otu, tagRecapture, sep = "_")
+    )
   
   # Create a minimal data frame of tags, lakeID's, and species for comparison
   oldData <- bind_rows(tochar(db), tochar(is)) %>%
-    filter(!is.na(.data[[ap]])) %>%
+    select(fishID, "pit" = pitApply, "floy" = floyApply, otu) %>%
     mutate(lakeID = word(fishID, 1, 1, sep = "_"),
-           lakeSpeciesTag = paste(lakeID, otu, .data[[ap]], sep = "_"), # WL_bluegill_13059801
-           lakeTag = paste(lakeID, .data[[ap]], sep = "_"), # WL_13059801
-           speciesTag = paste(otu, .data[[ap]], sep = "_") # bluegill_13059801
-    ) %>%
+           dateSample = lubridate::ymd(word(fishID, 3, 3, sep = "_"))) %>%
+    pivot_longer(cols = c("pit", "floy"),
+                 names_to = "tagApplyType",
+                 values_to = "tagApply") %>%
+    filter(!is.na(tagApply)) %>%
+    mutate(lakeSpeciesTag = paste(lakeID, otu, tagApply, sep = "_"),
+           lakeTag = paste(lakeID, tagApply, sep = "_"),
+           speciesTag = paste(otu, tagApply, sep = "_")) %>%
     distinct() %>%
-    select(fishID, otu, all_of(ap), lakeID, lakeSpeciesTag, lakeTag, speciesTag)
+    # If there are multiple apply instances for whatever reason, take the first one
+    arrange(tagApply, dateSample) %>%
+    group_by(tagApply) %>%
+    slice(1) %>%
+    ungroup()
   
   if(nrow(newData) > 0){
+    # Check whether there are any tags where the number matches but not the tag type
+    differentTagType <- newData %>%
+      select(fishID, tagRecapture, tagRecaptureType) %>%
+      left_join(oldData %>%
+                  select(tagApply, tagApplyType),
+                by = c("tagRecapture" = "tagApply")) %>%
+      filter(!is.na(tagRecaptureType), !is.na(tagApplyType), 
+             tagRecaptureType != tagApplyType)
+    
+    if(nrow(differentTagType) > 0){
+      if(fd == F){
+        stop(paste0("For the following tag(s), the tag recapture type is different than the tag apply type:\n\n",
+             paste0(capture.output(differentTagType), sep = "\n"),
+             "\n\nIf you're sure you want to enter this data, use ",
+             deparse(substitute(fd)), "."))
+      }
+    }
+    
+    # Look for problems in the tag numbers themselves
     problems <- newData %>%
-      mutate(lakeID = word(fishID, 1, 1, sep = "_"),
-             lakeSpeciesTag = paste(lakeID, otu, .data[[re]], sep = "_"), # WL_bluegill_13059801
-             lakeTag = paste(lakeID, .data[[re]], sep = "_"), # WL_13059801
-             speciesTag = paste(otu, .data[[re]], sep = "_") # bluegill_13059801
-      ) %>%
       # Annotate each row of the new data
       mutate(problem = case_when(
         # No problem: tag has been applied to the same species in the same lake
         lakeSpeciesTag %in% oldData$lakeSpeciesTag ~ "none",
         
         # Problem: tag has never been applied before, regardless of species/lake
-        !.data[[re]] %in% oldData[,ap] ~ "never applied--wrong number?",
+        !tagRecapture %in% oldData$tagApply ~ "never applied--wrong number?",
         
         # Problem: tag has been applied before, but not in this species or lake
-        (.data[[re]] %in% oldData[,ap]) & (!lakeTag %in% oldData$lakeTag) &
+        (tagRecapture %in% oldData$tagApply) & (!lakeTag %in% oldData$lakeTag) &
           (!speciesTag %in% oldData$speciesTag) ~ "wrong species, wrong lake",
         
         # Problem: right lake, wrong species
@@ -480,72 +506,74 @@ checkTagRecapture <- function(type, new, db, is, forceNew, forceSpecies, forceLa
           (!lakeTag %in% oldData$lakeTag) ~ "right species, wrong lake",
         
         # Other: what's going on here?
-        TRUE ~ NA_character_))
+        TRUE ~ NA_character_)) %>%
+      filter(problem != "none")
     
     # Separate out the problem tags so it's easier to show the data in the error messages
     neverApplied <- problems %>% 
       filter(problem == "never applied--wrong number?") %>%
-      select(fishID, .data[[re]])
+      select(fishID, tagRecapture, tagRecaptureType)
     
     wrongSpeciesWrongLake <- problems %>% 
       filter(problem == "wrong species, wrong lake") %>%
-      select(fishID, .data[[re]], otu)
+      select(fishID, tagRecapture, tagRecaptureType, otu)
     original_1 <- oldData %>%
-      filter(.data[[ap]] %in% wrongSpeciesWrongLake[,re]) %>%
-      select(fishID, 'applyOTU' = otu, 'applyLake' = lakeID, .data[[ap]])
-    wswl <- left_join(wrongSpeciesWrongLake, original_1, by = "fishID")
+      filter(tagApply %in% wrongSpeciesWrongLake$tagRecapture) %>%
+      select('applyOTU' = otu, 'applyLake' = lakeID, tagApply)
+    wswl <- left_join(wrongSpeciesWrongLake, original_1, by = c("tagRecapture" = "tagApply"))
     
     rightLakeWrongSpecies <- problems %>% 
       filter(problem == "right lake, wrong species") %>%
-      select(fishID, .data[[re]], otu)
+      select(fishID, tagRecapture, tagRecaptureType, otu)
     original_2 <- oldData %>%
-      filter(.data[[ap]] %in% rightLakeWrongSpecies[,re]) %>%
-      select(fishID, 'applyOTU' = otu, .data[[ap]])
-    rlws <- left_join(rightLakeWrongSpecies, original_2, by = "fishID")
+      filter(tagApply %in% rightLakeWrongSpecies$tagRecapture) %>%
+      select('applyOTU' = otu, tagApply)
+    rlws <- left_join(rightLakeWrongSpecies, original_2, by = c("tagRecapture" = "tagApply"))
     
     rightSpeciesWrongLake <- problems %>% 
       filter(problem == "right species, wrong lake") %>%
-      select(fishID, lakeID, .data[[re]])
+      select(fishID, tagRecapture, tagRecaptureType, lakeID)
     original_3 <- oldData %>%
-      filter(.data[[ap]] %in% rightSpeciesWrongLake[,re]) %>%
-      select(fishID, 'applyLake' = lakeID, .data[[ap]])
-    rswl <- left_join(rightSpeciesWrongLake, original_3, by = "fishID")
+      filter(tagApply %in% rightSpeciesWrongLake$tagRecapture) %>%
+      select('applyLake' = lakeID, tagApply)
+    rlws <- left_join(rightSpeciesWrongLake, original_3, by = c("tagRecapture" = "tagApply"))
     
     # Throw errors
     if(nrow(neverApplied) > 0){
-      if(forceNew == F){
+      if(fn == F){
         stop(paste0("You are reporting ", re, " values that have never been applied before, in any lake or species:\n\n",
                     paste0(capture.output(neverApplied), collapse = "\n"),
-                    "\n\nIf you're sure you want to report these values, use ",
-                    deparse(substitute(forceNew)), "."))
+                    "\n\nIf you're sure you want to report these values, use ", 
+                    deparse(substitute(fn)), "."))
       }
     }
     if(nrow(rlws) > 0){
-      if(forceSpecies == F){
+      if(fs == F){
         stop(paste0("You are reporting ", re, " values that have been applied before in this lake, but in a different species:\n\n",
                     paste0(capture.output(rlws), collapse = "\n"),
                     "\n\nIf you're sure that this is correct, use ",
-                    deparse(substitute(forceSpecies)), "."))
+                    deparse(substitute(fs)), "."))
       }
     }
     if(nrow(rswl) > 0){
-      if(forceLake == F){
+      if(fl == F){
         stop(paste0("You are reporting ", re, " values that have been applied before to this species, but in a different lake:\n\n",
                     paste0(capture.output(rswl), collapse = "\n"),
                     "\n\nIf you're sure that this is correct, use ",
-                    deparse(substitute(forceLake)), "."))
+                    deparse(substitute(fl)), "."))
       }
     }
     if(nrow(wswl) > 0){
-      if(forceSpecies == F | forceLake == F){ # both have to be T to let this proceed
+      if(fs == F | fl == F){ # both have to be TRUE to let this proceed
         stop(paste0("You are reporting ", re, " values that have been applied before in a different species and different lake:\n\n",
                     paste0(capture.output(wswl), collapse = "\n"),
                     "\n\nIf you're sure this is correct, use both ",
-                    deparse(substitute(forceSpecies)), " and ",
-                    deparse(substitute(forceLake)), "."))
+                    deparse(substitute(fs)), " and ",
+                    deparse(substitute(fl)), "."))
       }
     }
   }
+  message("Recaptured tags look good!")
 }
 
 # checkClipRecapture ------------------------------------------------------

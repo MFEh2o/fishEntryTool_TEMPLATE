@@ -233,14 +233,14 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                  choices = unique(fishSamplesDB$useSampleMarkRecap)) # no force option
     checkForRepeats(colName = "sampleID", new = newFS, db = fishSamplesDB, 
                     is = fishSamplesIS)
-    checkDateTimes(new = newFS)
-    checkRangeLimits(colName = "doy", is = fishSamplesIS, new = newFS,
+    #checkDateTimes(new = newFS) # XXX come back to this one
+    checkRangeLimits(colName = "doy", new = newFS,
                      f = force_dayOfYear, minVal = 91, maxVal = 305, 
                      allowMinEqual = F, allowMaxEqual = F)
-    checkRangeLimits(colName = "distanceShocked", is = fishSamplesIS, 
+    checkRangeLimits(colName = "distanceShocked",  
                      new = newFS, f = force_distanceShocked, minVal = 0, 
                      maxVal = 25, allowMinEqual = F, allowMaxEqual = F)
-    checkRangeLimits(colName = "effort", is = fishSamplesIS, new = newFS,
+    checkRangeLimits(colName = "effort", new = newFS,
                      f = force_effort, minVal = 0, maxVal = 24,
                      allowMinEqual = T, allowMaxEqual = F)
     
@@ -256,6 +256,9 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                 is = fishInfoIS, f = force_clipApply)
     checkClipRecapture(new = newFI, db = fishInfoDB, is = fishInfoIS, 
                        f = force_clipRecapture)
+    checkTagRecapture(new = newFI, db = fishInfoDB, is = fishInfoIS, 
+                      fd = force_tagRecapType, fn = force_tagRecap, 
+                      fs = force_tagRecapSpecies, fl = force_tagRecapLake)
     
 
     checkForRepeats(colName = "pitApply", tc = toCompile, db = fishInfoDB,
