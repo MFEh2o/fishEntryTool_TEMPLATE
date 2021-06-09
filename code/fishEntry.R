@@ -260,12 +260,13 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     checkTagRecapture(new = newFI, db = fishInfoDB, is = fishInfoIS, 
                       fd = force_tagRecapType, fn = force_tagRecap, 
                       fs = force_tagRecapSpecies, fl = force_tagRecapLake)
-    
-
-    checkForRepeats(colName = "pitApply", tc = toCompile, db = fishInfoDB,
+    checkForRepeats(colName = "pitApply", new = newFI, db = fishInfoDB,
                     is = fishInfoIS, na.ok = T, f = force_pitApply)
-    checkForRepeats(colName = "floyApply", tc = toCompile, db = fishInfoDB,
+    checkForRepeats(colName = "floyApply", new = newFI, db = fishInfoDB,
                     is = fishInfoIS, na.ok = T, f = force_floyApply)
+    vonBCheck(new = newFI, db = fishInfoDB, is = fishInfoIS, f = force_vonB)
+    checkLakeSpecies(new = newFI, db = fishInfoDB, is = fishInfoIS, 
+                     f = force_lakeSpecies)
 
     
     # Update tables with new entries ------------------------------------------

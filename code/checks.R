@@ -52,109 +52,6 @@ checkHeader <- function(h = header){
   assertCharacter(as.character(header$dateSample), pattern = pat_date)
 }
 
-# vonBertalanffy ----------------------------------------------------------
-vonB <- function(Linf, K, t0){
-  
-}
-
-# Find all recap tags that *do* match an apply
-# For each that has a fish length:
-# If the fish was originally tagged this year and length was measured when it was originally tagged
-# (There seems to be a distinction between fish tagged this year vs. last year?) But I can't see what the difference is.
-# If EL, FE, or WL, set vonB parameters to something
-# Otherwise, set them to something else (from source)
-# Run vonB
-
-
-# # - tagRecap accidently matches an old apply
-# # check lengths when matching recap to apply
-# # use vonB for Long Lake and or Wisconsin for this...
-# if(length(tagsRecapped)>0){
-#   for(j in 1:length(tagsRecapped)){
-#     # if we measured a length
-#     if(!is.na(curNEW$fishLength[curNEW$tagRecapture == tagsRecapped[j]])){
-#       #if tagged this year
-#       if(tagsRecapped[j]%in%fishInfoIS$tagApply){
-#         #if we measured length when tag was applied
-#         if(any(!is.na(fishInfoIS$fishLength[fishInfoIS$tagApply == tagsRecapped[j]]), na.rm = TRUE)){
-#           #if we are looking at Long Lake, use our vonB
-#           if(lakeID%in%c("EL", "FE", "WL")){
-#             Linf = 376.909
-#             K = 0.32
-#             t0 = -0.599
-#             tagLength = fishInfoIS$fishLength[fishInfoIS$tagApply == tagsRecapped[j]]
-#             tagDate = fishSamplesIS$dateSample[fishSamplesIS$sampleID == fishInfoIS$sampleID[fishInfoIS$tagApply == tagsRecapped[j]]]
-#             growthTime = as.Date(dateSample)-as.Date(tagDate)
-#             age1 = log(1-tagLength/Linf)/-K+t0
-#             age2 = age1+growthTime
-#             expL = Linf*(1-exp(-K*(age2-t0)))
-#             obsL = curNEW$fishLength[curNEW$tagRecapture == tagsRecapped[j]]
-#             #if the fish we recapped is shorter or longer than fish tagged, based on vonB
-#             if(abs(expL-obsL)>(0.1*obsL)){
-#               stop(paste("The fish with tagRecapture:", tagsRecapped[j], "is a length that would not be expected. Is there a problem with the tag data or length data?", sep = " "))
-#             }
-#             # use general vonB from Beamsderfer & North 1995
-#           }else{
-#             Linf = 550
-#             K = 0.19
-#             t0 = -0.024
-#             tagLength = fishInfoIS$fishLength[fishInfoIS$tagApply == tagsRecapped[j]]
-#             tagDate = fishSamplesIS$dateSample[fishSamplesIS$sampleID == fishInfoIS$sampleID[fishInfoIS$tagApply == tagsRecapped[j]]]
-#             growthTime = (as.Date(dateSample)-as.Date(tagDate))/365 # difference in days, so convert to years for vonB
-#             age1 = log(1-tagLength/Linf)/-K+t0
-#             age2 = age1+growthTime
-#             expL = Linf*(1-exp(-K*(age2-t0)))
-#             obsL = curNEW$fishLength[curNEW$tagRecapture == tagsRecapped[j]]
-#             #if the fish we recapped is shorter or longer than fish tagged, based on vonB
-#             if(abs(expL-obsL)>(0.1*obsL)){
-#               stop(paste("The fish with tagRecapture:", tagsRecapped[j], "is a length that would not be expected. Is there a problem with the tag data or length data?", sep = " "))
-#             }
-#           }   
-#         }
-#       }
-#       # if tagged in a previous year
-#       if(tagsRecapped[j]%in%fishInfoDB$tagApply){
-#         #if we measured length when tag was applied
-#         if(any(!is.na(fishInfoDB$fishLength[fishInfoDB$tagApply == tagsRecapped[j]]), na.rm = TRUE)){
-#           #if we are looking at Long Lake, use our vonB
-#           if(lakeID%in%c("EL", "FE", "WL")){
-#             Linf = 376.909
-#             K = 0.32
-#             t0 = -0.599
-#             tagLength = fishInfoDB$fishLength[fishInfoDB$tagApply == tagsRecapped[j]]
-#             tagDate = fishSamplesDB$dateSample[fishSamplesDB$sampleID == fishInfoDB$sampleID[fishInfoDB$tagApply == tagsRecapped[j]]]
-#             growthTime = as.Date(dateSample)-as.Date(tagDate)
-#             age1 = log(1-tagLength/Linf)/-K+t0
-#             age2 = age1+growthTime
-#             expL = Linf*(1-exp(-K*(age2-t0)))
-#             obsL = curNEW$fishLength[curNEW$tagRecapture == tagsRecapped[j]]
-#             #if the fish we recapped is shorter or longer than fish tagged, based on vonB
-#             if(abs(expL-obsL)>(0.1*obsL)){
-#               stop(paste("The fish with tagRecapture:", tagsRecapped[j], "is a length that would not be expected. Is there a problem with the tag data or length data?", sep = " "))
-#             }
-#             # use general vonB from Beamsderfer & North 1995
-#           }else{
-#             Linf = 550
-#             K = 0.19
-#             t0 = -0.024
-#             tagLength = fishInfoDB$fishLength[fishInfoDB$tagApply == tagsRecapped[j]]
-#             tagDate = fishSamplesDB$dateSample[fishSamplesDB$sampleID == fishInfoDB$sampleID[fishInfoDB$tagApply == tagsRecapped[j]]]
-#             growthTime = (as.Date(dateSample)-as.Date(tagDate))/365 # difference in days, so convert to years for vonB
-#             age1 = log(1-tagLength/Linf)/-K+t0
-#             age2 = age1+growthTime
-#             expL = Linf*(1-exp(-K*(age2-t0)))
-#             obsL = curNEW$fishLength[curNEW$tagRecapture == tagsRecapped[j]]
-#             #if the fish we recapped is shorter or longer than fish tagged, based on vonB
-#             if(abs(expL-obsL)>(0.1*obsL)){
-#               stop(paste("The fish with tagRecapture:", tagsRecapped[j], "is a length that would not be expected. Is there a problem with the tag data or length data?", sep = " "))
-#             }
-#           }   
-#         }
-#       }
-#     }
-#   }
-# }
-
 # Checks at the end against the in-season database and full database ----------
 
 # checkForNew -------------------------------------------------------------
@@ -477,9 +374,9 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
     if(nrow(differentTagType) > 0){
       if(fd == F){
         stop(paste0("For the following tag(s), the tag recapture type is different than the tag apply type:\n\n",
-             paste0(capture.output(differentTagType), sep = "\n"),
-             "\n\nIf you're sure you want to enter this data, use ",
-             deparse(substitute(fd)), "."))
+                    paste0(capture.output(differentTagType), sep = "\n"),
+                    "\n\nIf you're sure you want to enter this data, use ",
+                    deparse(substitute(fd)), "."))
       }
     }
     
@@ -622,36 +519,106 @@ checkTagFormats <- function(new, fp, ff){
   # fp is going to be "force_pitFormat", and ff will be "force_floyFormat" (or something like that.)
 }
 
+# vonB --------------------------------------------------------------------
+vonB <- function(df){
+  # Extract the dateApply and dateRecap
+  df <- df %>%
+    mutate(dateApply = word(fishIDApply, 3, 3, sep = "_"),
+           dateRecap = word(fishID, 3, 3, sep = "_")) %>%
+    mutate(across(.cols = c("dateApply", "dateRecap"), .fns = lubridate::ymd),
+           across(.cols = c("fishLength", "lengthApply"), .fns = as.numeric))
+  
+  # Compute age and growth time
+  df <- df %>%
+    mutate(growthTime = as.numeric(dateRecap - dateApply)/365, # convert from days to years, since t0 has units of years
+           age1 = log(1 - c(fishLength/Linf))/-K + t0,
+           age2 = as.numeric(age1 + growthTime),
+           vonB_expectedLength = Linf*(1-exp(-K*(age2-t0)))) %>%
+    select(-c("dateApply", "dateRecap", "growthTime", "age1", "age2"))
+  
+  # Return the whole data frame, with expectedLength added
+  return(df)
+}
+
+# vonBCheck ---------------------------------------------------------------
+vonBCheck <- function(new, db, is, f){
+  recaptured <- new %>% # XXX go back to the other functions and add the entryFile column
+    select(fishID, otu, fishLength, "pit" = pitRecapture, "floy" = floyRecapture, entryFile) %>%
+    pivot_longer(cols = c("pit", "floy"), names_to = "tagRecaptureType", 
+                 values_to = "tagRecapture") %>%
+    filter(!is.na(tagRecapture))
+  
+  applied <- bind_rows(tochar(db), tochar(is)) %>%
+    filter(!is.na(fishLength)) %>%
+    select("fishIDApply" = fishID, "otuApply" = otu, # we're not filtering on otu, but we'll let people see it in the error message for extra info.
+           "lengthApply" = fishLength, "pit" = pitApply, "floy" = floyApply) %>%
+    pivot_longer(cols = c("pit", "floy"), names_to = "tagApplyType",
+                 values_to = "tagApply") %>%
+    filter(!is.na(tagApply)) %>%
+    # If multiple applies, take the most recent one. This is a coarse check.
+    arrange(lubridate::ymd(word(fishIDApply, 3, 3, sep = "_"))) %>%
+    group_by(tagApply) %>%
+    slice_tail() %>% # most recent apply
+    ungroup()
+  
+  # Pair up recaptured tags with applied tags
+  paired <- left_join(recaptured, applied, by = c("tagRecapture" = "tagApply")) %>%
+    filter(!is.na(fishIDApply))
+  
+  # Apply vonB equation, with different parameters depending on whether the fish are from Long Lake or not.
+  paired <- paired %>%
+    mutate(lakeID = word(fishID, 1, 1, sep = "_"),
+           Linf = ifelse(lakeID %in% c("WL", "EL", "FE"), 376.909, 550),
+           K = ifelse(lakeID %in% c("WL", "EL", "FE"), 0.32, 0.19),
+           t0 = ifelse(lakeID %in% c("WL", "EL", "FE"), -0.599, -0.024)) %>%
+    vonB()
+  
+  # Separate out any fish that deviate too much from the prediction
+  problems <- paired %>%
+    filter(abs(vonB_expectedLength - fishLength) > (0.1*fishLength)) %>%
+    select(fishID, tagRecapture, fishLength, lengthApply, vonB_expectedLength, 
+           otu, otuApply) %>%
+    as.data.frame()
+  
+  # Throw an error if there are any problematic fish.
+  if(nrow(problems) > 0){
+    if(f == F){
+      stop(paste0("The following recaptured fish have lengths that would not be expected based on von Bertalanffy growth curves:\n\n",
+                  paste0(capture.output(problems), collapse = "\n"),
+                  "\n\nIs there a problem with the tag data or length data? If you're sure you want to enter this data, use ", deparse(substitute(f)), "."))
+    }
+  }
+}
 
 
-# # Check that any recaptured fish that were previously tagged in the same lake have a reasonable size
-# recaptured <- x %>%
-#   filter(!is.na(tagRecapture))
-# if(nrow(recaptured) > 0){
-#   for(i in 1:nrow(recaptured)){
-#     # fishID
-#     fish <- recaptured[i, "fishID"]
-#     # length at recapture
-#     length <- recaptured[i, "fishLength"]
-#     # tag number recaptured
-#     tagNumber <- as.character(recaptured[i, "tagRecapture"])
-#     # lake
-#     lake <- word(recaptured[i, "fishID"], 1, 1, sep = "_")
-#     
-#     # If we measured a length at recapture
-#     if(!is.na(length)){
-#       # Get any instances of the same tag number being applied in the same lake
-#       lengthApplied <- previous %>%
-#         mutate(lakeID = word(fishID, 1, 1, sep = "_")) %>%
-#         filter(lakeID == lake,
-#                as.character(pitApply) == tagNumber|
-#                  as.character(floyApply) == tagNumber) %>%
-#         filter(!is.na(fishLength)) %>%
-#         pull(fishLength)
-#       if(length(lengthApplied) > 1){
-#         warning(paste0("Tag ", tagNumber, " from fish ", fish, " has multiple previous apply records in this lake. Can't run vonB length check. Make a note to investigate the previous records for this fish."))
-#       }
-#     }
-#   }
-# }
+# checkLakeSpecies --------------------------------------------------------
+# Has this fish species ever been captured in this lake before?
+checkLakeSpecies <- function(new, db, is, f){
+  # new lake/species combos
+  newCombos <- new %>%
+    mutate(lakeID = word(fishID, 1, 1, sep = "_")) %>%
+    select(lakeID, otu, entryFile) %>%
+    distinct()
+  
+  # old lake/species combos
+  oldCombos <- bind_rows(tochar(db), tochar(is)) %>%
+    mutate(lakeID = word(fishID, 1, 1, sep = "_")) %>%
+    select(lakeID, otu) %>%
+    distinct()
+  
+  # lake/species combos that have never appeared before
+  problemCombos <- newCombos %>%
+    filter(!paste(lakeID, otu, sep = "_") %in% 
+             paste(oldCombos$lakeID, oldCombos$otu, sep = "_"))
+  
+  if(nrow(problemCombos_unique) > 0){
+    if(f == FALSE){
+      stop(paste0("You're reporting some species in lakes where they have never been reported before:\n\n",
+                  paste0(capture.output(problemCombos), collapse = "\n"),
+                  "\n\nIf you're sure these species and lakes are correct, use ", deparse(substitute(f)), "."))
+    }
+  }
+}
+
+
 
