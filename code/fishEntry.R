@@ -44,7 +44,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                        force_pitApply = FALSE,
                        force_floyApply = FALSE,
                        force_pitLake = FALSE,
-                       force_floyLake = FALSE){
+                       force_floyLake = FALSE,
+                       force_tagRecap = FALSE){
   
   source(file.path(funcdir, "dbUtil.R")) # load the dbUtil functions
   
@@ -247,12 +248,12 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     # FISH_INFO
     checkForNew(colName = "otu", new = newFI, db = fishInfoDB,
                 is = fishInfoIS, f = force_species)
-    checkDuplicateFishIDs(is = fishInfoIS, db = fishInfoDB, new = newFI)
+    checkDuplicateFishIDs(new = newFI, is = fishInfoIS, db = fishInfoDB)
     checkFishLengthWeight(db = fishInfoDB, new = newFI, is = fishInfoIS, 
                           fl = force_fishLength, fw = force_fishWeight)
     checkForRepeats(colName = "sampleID", new = newFI, db = fishInfoDB, 
                     is = fishInfoIS)
-    checkForNew(colName = "clipApply", tc = toCompile, db = fishInfoDB, 
+    checkForNew(colName = "clipApply", new = newFI, db = fishInfoDB, 
                 is = fishInfoIS, f = force_clipApply)
     checkClipRecapture(new = newFI, db = fishInfoDB, is = fishInfoIS, 
                        f = force_clipRecapture)

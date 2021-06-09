@@ -277,7 +277,7 @@ checkDateTimes <- function(new){
 
 # checkDuplicateFishIDs --------------------------------------------------
 # Can't use checkForRepeats on this one because we care about *all* the rows, not just comparing new to old.
-checkDuplicateFishIDs <- function(is, db){
+checkDuplicateFishIDs <- function(new, is, db){
   # Get fishID's
   dbIDs <- db$fishID # database
   isIDs <- is$fishID # in-season
@@ -536,12 +536,12 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
     original_3 <- oldData %>%
       filter(tagApply %in% rightSpeciesWrongLake$tagRecapture) %>%
       select('applyLake' = lakeID, tagApply)
-    rlws <- left_join(rightSpeciesWrongLake, original_3, by = c("tagRecapture" = "tagApply"))
+    rswl <- left_join(rightSpeciesWrongLake, original_3, by = c("tagRecapture" = "tagApply"))
     
     # Throw errors
     if(nrow(neverApplied) > 0){
       if(fn == F){
-        stop(paste0("You are reporting ", re, " values that have never been applied before, in any lake or species:\n\n",
+        stop(paste0("You are reporting tag values that have never been applied before, in any lake or species:\n\n",
                     paste0(capture.output(neverApplied), collapse = "\n"),
                     "\n\nIf you're sure you want to report these values, use ", 
                     deparse(substitute(fn)), "."))
