@@ -24,28 +24,30 @@ isdir <- here("inSeason")
 # (remove the above)
 
 updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, 
-                       force_lakeID = FALSE, 
-                       force_siteID = FALSE, 
-                       force_dayOfYear = FALSE, 
-                       force_gear = FALSE, 
-                       force_sampleGroup = FALSE, 
-                       force_effort = FALSE, 
-                       force_effortUnits = FALSE, 
-                       force_distanceShocked = FALSE, 
-                       force_metadataID = FALSE, 
-                       force_newProjectID = FALSE, 
-                       force_retiredProjectID = FALSE,
-                       force_species = FALSE, 
-                       force_fishLength = FALSE, 
-                       force_fishWeight = FALSE, 
-                       force_clipApply = FALSE,
-                       force_clipRecapture = FALSE,
-                       force_clipLake = FALSE,
-                       force_pitApply = FALSE,
-                       force_floyApply = FALSE,
-                       force_pitLake = FALSE,
-                       force_floyLake = FALSE,
-                       force_tagRecap = FALSE){
+                       force_species = F,
+                       force_lakeID = F,
+                       force_siteID = F,
+                       force_gear = F,
+                       force_sampleGroup = F,
+                       force_effortUnits = F,
+                       force_metadataID = F,
+                       force_newProjectID = F,
+                       force_retiredProjectID = F,
+                       force_dayOfYear = F,
+                       force_distanceShocked = F,
+                       force_effort = F,
+                       force_fishLength = F,
+                       force_fishWeight = F,
+                       force_clipApply = F,
+                       force_clipRecapture = F,
+                       force_tagRecapType = F,
+                       force_tagRecap = F,
+                       force_tagRecapSpecies = F,
+                       force_tagRecapLake = F,
+                       force_pitApply = F,
+                       force_floyApply = F,
+                       force_vonB = F,
+                       force_lakeSpecies = F){
   
   source(file.path(funcdir, "dbUtil.R")) # load the dbUtil functions
   
@@ -213,7 +215,6 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     
     # Run checks --------------------------------------------------------------
     # Note that I run these checks *before* adding the new compiled data to the in-season database. Otherwise, I'd have to separate out the new IS data from the old IS data in every check function, which is super tedious.
-    # XXX possible fuzzy matching 'did you mean' option for e.g. site names, metadataID's
     # FISH_SAMPLES
     checkForNew(colName = "lakeID", new = newFS, db = lakesDB, 
                 is = fishSamplesIS, f = force_lakeID)
@@ -235,8 +236,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                  choices = unique(fishSamplesDB$useSampleMarkRecap)) # no force option
     checkForRepeats(colName = "sampleID", new = newFS, db = fishSamplesDB, 
                     is = fishSamplesIS)
-    #checkDateTimes(new = newFS) # XXX come back to this one
-    checkRangeLimits(colName = "doy", new = newFS,
+    checkDateTimes(new = newFS)
+    checkRangeLimits(colName = "dayOfYear", new = newFS,
                      f = force_dayOfYear, minVal = 91, maxVal = 305, 
                      allowMinEqual = F, allowMaxEqual = F)
     checkRangeLimits(colName = "distanceShocked",  
@@ -245,6 +246,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     checkRangeLimits(colName = "effort", new = newFS,
                      f = force_effort, minVal = 0, maxVal = 24,
                      allowMinEqual = T, allowMaxEqual = F)
+    retiredProjectIDsCheck(new = newFS, f = force_retiredProjectID)
     
     # FISH_INFO
     checkForNew(colName = "otu", new = newFI, db = fishInfoDB,

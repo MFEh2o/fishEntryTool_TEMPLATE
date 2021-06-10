@@ -171,6 +171,7 @@ checkRangeLimits <- function(colName, new, minVal, maxVal,
   
   # Isolate problem rows
   problemRows <- new %>%
+    select({{colName}}, entryFile) %>%
     {if(allowMinEqual){
       filter(., {{colName}} < minVal)
     }else{
@@ -202,7 +203,7 @@ checkDateTimes <- function(new){
   
   # dateSet must be the same or earlier than dateSample
   problemRowsDate <- new %>%
-    filter(as.Date(dateSample) < as.Date(dateSet))
+    filter(lubridate::ymd(dateSample) < lubridate::ymd(dateSet))
   
   # Error message for dateSet/dateSample
   if(nrow(problemRowsDate) > 0){
@@ -731,7 +732,7 @@ checkLakeSpecies <- function(new, db, is, f){
     filter(!paste(lakeID, otu, sep = "_") %in% 
              paste(oldCombos$lakeID, oldCombos$otu, sep = "_"))
   
-  if(nrow(problemCombos_unique) > 0){
+  if(nrow(problemCombos) > 0){
     if(f == FALSE){
       stop(paste0("You're reporting some species in lakes where they have never been reported before:\n\n",
                   paste0(capture.output(problemCombos), collapse = "\n"),
@@ -740,5 +741,26 @@ checkLakeSpecies <- function(new, db, is, f){
   }
 }
 
+# retiredProjectIDsCheck --------------------------------------------------
+retiredProjectIDsCheck <- function(new, f = force_retiredProjectID){
+  assertFlag(f)
+  assertChoice("projectID", choices = names(new))
+  assertChoice("entryFile", choices = names(new))
+  
+  # Check whether any of the newly-added projectIDs should have been retired
+  problemRows <- new %>%
+    filter(projectID %in% retiredProjectIDs) %>%
+    select(projectID, entryFile) %>%
+    distinct()
+  
+  # If there are retired projectID's, throw error and print the retired projectIDs
+  if(nrow(problemRows) > 0){
+    if(f == FALSE){
+      stop(paste0("Some of the projectID's you're trying to enter are from old projects and should not be associated with incoming data. Here are the projectID's, and the files they come from: \n\n",
+                  paste0(capture.output(problemRows), collapse = "\n"),
+                  "\n\n If you are sure that you want to use these projectID's, use force_retiredProjectIDs."))
+    }
+  }
+}
 
 

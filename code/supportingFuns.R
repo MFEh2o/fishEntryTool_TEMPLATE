@@ -4,6 +4,9 @@
 # Packages ----------------------------------------------------------------
 library(tidyverse)
 
+# List of retired projectIDs ----------------------------------------------
+retiredProjectIDs <- c(1:2, 4:5, 7:12, 14, 16, 18:25, 27:33, 39:40)
+
 # tochar ------------------------------------------------------------------
 # shortcut for converting all columns in a data frame to character
 tochar <- function(df){
@@ -250,13 +253,22 @@ makeFishSamplesNEW <- function(h = header, dss = dateSampleString,
   assertCharacter(tss, len = 1)
   assertCharacter(f, len = 1)
   assertSubset(c("lakeID", "siteName", "gear", "metadataID", "dateSample", "projectID", "lakeID", "dataRecorder", "dataEnteredBy", "effortUnits", "crew", "useCPUE"), choices = names(h)) # XXX updateID?
-  assertDate(h$dateSample)
-  assertCharacter(as.character(h$dateSample), len = 1, 
+  h$dateSet <- as.character(h$dateSet)
+  h$dateSample <- as.character(h$dateSample)
+  h$dateTimeSet <- as.character(h$dateTimeSet)
+  h$dateTimeSample <- as.character(h$dateTimeSample)
+  assertCharacter(h$dateSet, len = 1, 
                   pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}")
+  assertCharacter(h$dateSample, len = 1, 
+                  pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}")
+  assertCharacter(h$dateTimeSet, len = 1, 
+                  pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}\\s[0-9]{2}:[0-9]{2}:[0-9]{2}")
+  assertCharacter(h$dateTimeSample, len = 1, 
+                  pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}\\s[0-9]{2}:[0-9]{2}:[0-9]{2}")
   
   # Make fishSamplesNEW
   fishSamplesNEW <- data.frame(key = names(h),
-                               value = unname(unlist(h))) %>%
+                               value = purrr::reduce(h, c)) %>%
     pivot_wider(names_from = key, values_from = value) %>%
     mutate(siteID = paste(lakeID, siteName, sep = "_"),
            sampleID = paste(siteID, dss, tss,
