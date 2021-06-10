@@ -1,11 +1,15 @@
 # Check functions for the fish entry tool
 # Created by Kaija Gahm on 21 May 2021
 
-expectedEffortUnits <- c("angler_hours", "electrofishing_hours", "meters", "trap_hours", 
-                         NA, "seine_pulls")
+expectedEffortUnits <- c("angler_hours", "electrofishing_hours", 
+                         "meters", "trap_hours", NA, "seine_pulls")
 
 # checkHeader function ----------------------------------------------------
 checkHeader <- function(h = header){
+  # Checks for inputs
+  assertList(h, names = "unique")
+  assertSubset(c("comments", "distanceShocked", "gear", "effortUnits", "crew", "dateSet", "dateSample", "dateTimeSet", "dateTimeSample"), choices = names(h))
+  
   # Define required fields for electrofishing vs. not.
   requiredElectro <- h[!names(h) == "comments"]
   requiredNonElectro <- h[!names(h) %in% c("comments", "distanceShocked")]
@@ -16,19 +20,22 @@ checkHeader <- function(h = header){
     if(any(is.na(requiredElectro)|requiredElectro == "")){
       stop(paste0("Required header information is incomplete in ", file, 
                   ". You're missing: ", 
-                  paste(names(requiredElectro[requiredElectro == ""|is.na(requiredElectro)]), 
+                  paste(names(requiredElectro[requiredElectro == ""|
+                                                is.na(requiredElectro)]), 
                         collapse = ", ")))
     }
   }else{
     if(any(is.na(requiredNonElectro)|requiredNonElectro == "")){
       stop(paste0("Required header information is incomplete in ", file,
                   ". You're missing: ",
-                  paste(names(requiredNonElectro[requiredNonElectro == ""|is.na(requiredNonElectro)]),
+                  paste(names(requiredNonElectro[requiredNonElectro == ""|
+                                                   is.na(requiredNonElectro)]),
                         collapse = ", ")))
     }
   }
   
   # Check that effortUnits is in one of the allowable formats
+  assertCharacter(expectedEffortUnits)
   if(!h$effortUnits %in% expectedEffortUnits){
     stop(paste0("effortUnits must be one of the following values: ", 
                 paste(expectedEffortUnits, collapse = ", ")))
@@ -57,6 +64,15 @@ checkHeader <- function(h = header){
 # checkForNew -------------------------------------------------------------
 # Check function that can be used to check if you're introducing any new values
 checkForNew <- function(colName, new, db, is, f = NULL){
+  # Check inputs
+  assertDataFrame(new, col.names = "unique")
+  assertDataFrame(db, col.names = "unique")
+  assertDataFrame(is, col.names = "unique")
+  assertChoice(colName, choices = names(db))
+  assertChoice(colName, choices = names(is))
+  assertChoice("entryFile", names(new))
+  assertFlag(f)
+  
   # Get values previously used in the database
   dbVals <- db %>% pull({{colName}}) %>% unique()
   
@@ -92,6 +108,16 @@ checkForNew <- function(colName, new, db, is, f = NULL){
 # checkForRepeats ---------------------------------------------------------
 # Check function to make sure you're not introducing any repeat values.
 checkForRepeats <- function(colName, new, db, is, na.ok = F, f = NULL){
+  # Check inputs
+  assertDataFrame(new, col.names = "unique")
+  assertDataFrame(db, col.names = "unique")
+  assertDataFrame(is, col.names = "unique")
+  assertChoice(colName, choices = names(db))
+  assertChoice(colName, choices = names(is))
+  assertChoice("entryFile", names(new))
+  assertFlag(x = na.ok)
+  assertFlag(f, null.ok = T)
+  
   # Get values previously used in the database
   dbVals <- db %>% pull({{colName}}) %>% unique()
   
@@ -117,15 +143,32 @@ checkForRepeats <- function(colName, new, db, is, na.ok = F, f = NULL){
     }else{
       stop(paste0("You are attempting to add ", colName, " values that are already in either the database or the in-season file:\n\n",
                   paste0(capture.output(problemRows), collapse = "\n"),
-                  "\n\nIf you are sure you're entering the right values, you can use ", deparse(substitute(f)), " to bypass this message and enter the values anyway. But BEWARE! Tell the database manager. The database may not compile correctly if it includes repeat values."))
+                  "\n\nIf you are sure you're entering the right values, you can use ", 
+                  deparse(substitute(f)), 
+                  " to bypass this message and enter the values anyway. But BEWARE! Tell the database manager. The database may not compile correctly if it includes repeat values."))
     }
   }
 }
 
 # checkRangeLimits --------------------------------------------------------
 # Default is to define problem values as anything <= minVal and >= maxVal. If allowMinEqual = T, then only < minVal is a problem; if allowMaxEqual = T, then only > maxVal is a problem.
-checkRangeLimits <- function(colName, new, f, minVal, maxVal, 
-                             allowMinEqual = F, allowMaxEqual = F){
+checkRangeLimits <- function(colName, new, minVal, maxVal, 
+                             allowMinEqual = F, allowMaxEqual = F, f){
+  # Check inputs
+  assertDataFrame(new, col.names = "unique")
+  assertChoice(colName, choices = names(new))
+  assertChoice("entryFile", names(new))
+  assertFlag(allowMinEqual)
+  assertFlag(allowMaxEqual)
+  assertFlag(f)
+  assertNumeric(minVal, max.len = 1)
+  assertNumeric(maxVal, max.len = 1)
+
+  # If the column isn't numeric, coerce it to numeric
+  if(!is.numeric(new[,colName])){
+    new[,colName] <- as.numeric(new[,colName])
+  }
+  
   # Isolate problem rows
   problemRows <- new %>%
     {if(allowMinEqual){
@@ -139,17 +182,24 @@ checkRangeLimits <- function(colName, new, f, minVal, maxVal,
       filter(., {{colName}} >= maxVal)}
     }
   
+  # Throw error
   if(nrow(problemRows) > 0){
     if(f == FALSE){
-      stop(paste("Some ", colName, " values are outside the normal range of ", minVal, " to ", maxVal, ". The offending values are:\n\n",
+      stop(paste("Some ", colName, " values are outside the normal range of ", 
+                 minVal, " to ", maxVal, ". The offending values are:\n\n",
                  paste0(capture.output(problemRows), collapse = "\n"),
-                 "If you are sure that these values are correct, use the ", f, " argument."))
+                 "If you are sure that these values are correct, use the ", 
+                 f, " argument."))
     }
   }
 }
 
 # checkDateTimes ----------------------------------------------------------
 checkDateTimes <- function(new){
+  # Check inputs
+  assertDataFrame(new, col.names = "unique")
+  assertSubset(c("dateSample", "dateSet"), choices = names(new))
+  
   # dateSet must be the same or earlier than dateSample
   problemRowsDate <- new %>%
     filter(as.Date(dateSample) < as.Date(dateSet))
@@ -160,7 +210,7 @@ checkDateTimes <- function(new){
   }
   
   # dateTimeSet must be the same or earlier than dateTimeSample
-  problemRowsDateTime <- new %>%
+  problemRowsDateTime <- new %>% # XXX add a check earlier to make sure the dates are in this format.
     filter(strptime(dateTimeSample, 
                     format = "%m/%d%Y %H:%M:%S") < 
              strptime(dateTimeSet, 
@@ -175,6 +225,15 @@ checkDateTimes <- function(new){
 # checkDuplicateFishIDs --------------------------------------------------
 # Can't use checkForRepeats on this one because we care about *all* the rows, not just comparing new to old.
 checkDuplicateFishIDs <- function(new, is, db){
+  # Check inputs
+  assertDataFrame(new, col.names = "unique")
+  assertDataFrame(is, col.names = "unique")
+  assertDataFrame(db, col.names = "unique")
+  assertChoice("fishID", choices = names(new))
+  assertChoice("fishID", choices = names(db))
+  assertChoice("fishID", choices = names(is))
+  assertChoice("entryFile", names(new))
+  
   # Get fishID's
   dbIDs <- db$fishID # database
   isIDs <- is$fishID # in-season
@@ -211,11 +270,20 @@ checkDuplicateFishIDs <- function(new, is, db){
 }
 
 # checkFishLengthWeight ---------------------------------------------------
-checkFishLengthWeight <- function(new, db, is, fl, fw){
+checkFishLengthWeight <- function(new, db, fl, fw){
+  # Check inputs
+  assertDataFrame(new, col.names = "unique")
+  assertDataFrame(db, col.names = "unique")
+  assertFlag(fl)
+  assertFlag(fw)
+  assertSubset(c("fishLength", "fishWeight", "entryFile", "otu"), 
+               choices = names(new))
+  assertSubset(c("fishLength", "fishWeight"), choices = names(db))
+
+  # Coerce fishLength and fishWeight to numeric
   new <- new %>% mutate(across(c("fishLength", "fishWeight"), as.numeric))
   db <- db %>% mutate(across(c("fishLength", "fishWeight"), as.numeric))
-  is <- is %>% mutate(across(c("fishLength", "fishWeight"), as.numeric))
-  
+
   # Throw an error for fish weights or lengths that are 0 or negative.
   problemRows <- new %>%
     filter(fishLength <= 0|fishWeight <= 0) %>%
@@ -326,6 +394,22 @@ checkFishLengthWeight <- function(new, db, is, fl, fw){
 
 # checkTagRecapture ------------------------------------------------------------
 checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
+  # Check inputs
+  assertDataFrame(new, col.names = "unique")
+  assertDataFrame(db, col.names = "unique")
+  assertDataFrame(is, col.names = "unique")
+  assertSubset(c("fishID", "pitRecapture", "floyRecapture", "otu"), 
+               choices = names(new))
+  assertSubset(c("fishID", "pitApply", "floyApply", "otu"), 
+               choices = names(db))
+  assertSubset(c("fishID", "pitApply", "floyApply", "otu"), 
+               choices = names(is))
+  assertFlag(fd)
+  assertFlag(fn)
+  assertFlag(fs)
+  assertFlag(fl)
+  
+  # This is a long check, so give a progress message
   message("Checking recaptured tags...")
   
   # Reformat the data and get only fish with recaptured tags
@@ -475,8 +559,19 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
 
 # checkClipRecapture ------------------------------------------------------
 # Checks that clips recaptured have been previously applied to the same species in the same lake (and same type of clip)
-checkClipRecapture <- function(new = newFI, db = fishInfoDB, is = fishInfoIS, 
-                               f = force_clipRecapture){
+checkClipRecapture <- function(new, db, is, f){
+  # Check inputs
+  assertDataFrame(new, col.names = "unique")
+  assertDataFrame(db, col.names = "unique")
+  assertDataFrame(is, col.names = "unique")
+  assertSubset(c("clipRecapture", "fishID", "otu"), 
+               choices = names(new))
+  assertSubset(c("clipApply", "fishID", "otu"), 
+               choices = names(db))
+  assertSubset(c("clipApply", "fishID", "otu"), 
+               choices = names(is))
+  assertFlag(f)
+  
   # Get old clip/species/lake apply combos
   previous <- db %>%
     filter(!is.na(clipApply)) %>%
@@ -521,6 +616,11 @@ checkTagFormats <- function(new, fp, ff){
 
 # vonB --------------------------------------------------------------------
 vonB <- function(df){
+  # Check inputs
+  assertDataFrame(df, col.names = "unique")
+  assertSubset(c("fishIDApply", "fishID", "fishLength", "lengthApply", 
+                 "Linf", "K", "t0"), choices = names(df))
+  
   # Extract the dateApply and dateRecap
   df <- df %>%
     mutate(dateApply = word(fishIDApply, 3, 3, sep = "_"),
@@ -542,6 +642,17 @@ vonB <- function(df){
 
 # vonBCheck ---------------------------------------------------------------
 vonBCheck <- function(new, db, is, f){
+  # Check inputs
+  assertDataFrame(new, col.names = "unique")
+  assertDataFrame(db, col.names = "unique")
+  assertDataFrame(is, col.names = "unique")
+  assertSubset(c("fishID", "otu", "fishLength", "pitRecapture", "floyRecapture", "entryFile"), choices = names(new))
+  assertSubset(c("fishID", "otu", "fishLength", "pitApply", "floyApply"),
+               choices = names(db))
+  assertSubset(c("fishID", "otu", "fishLength", "pitApply", "floyApply"), 
+               choices = names(is))
+  assertFlag(f)
+  
   recaptured <- new %>% # XXX go back to the other functions and add the entryFile column
     select(fishID, otu, fishLength, "pit" = pitRecapture, "floy" = floyRecapture, entryFile) %>%
     pivot_longer(cols = c("pit", "floy"), names_to = "tagRecaptureType", 
@@ -571,7 +682,7 @@ vonBCheck <- function(new, db, is, f){
            Linf = ifelse(lakeID %in% c("WL", "EL", "FE"), 376.909, 550),
            K = ifelse(lakeID %in% c("WL", "EL", "FE"), 0.32, 0.19),
            t0 = ifelse(lakeID %in% c("WL", "EL", "FE"), -0.599, -0.024)) %>%
-    vonB()
+    vonB() # defined above
   
   # Separate out any fish that deviate too much from the prediction
   problems <- paired %>%
@@ -594,6 +705,15 @@ vonBCheck <- function(new, db, is, f){
 # checkLakeSpecies --------------------------------------------------------
 # Has this fish species ever been captured in this lake before?
 checkLakeSpecies <- function(new, db, is, f){
+  # Check inputs
+  assertDataFrame(new, col.names = "unique")
+  assertDataFrame(db, col.names = "unique")
+  assertDataFrame(is, col.names = "unique")
+  assertFlag(f)
+  assertSubset(c("fishID", "otu", "entryFile"), names(new))
+  assertSubset(c("fishID", "otu"), names(db))
+  assertSubset(c("fishID", "otu"), names(is))
+  
   # new lake/species combos
   newCombos <- new %>%
     mutate(lakeID = word(fishID, 1, 1, sep = "_")) %>%

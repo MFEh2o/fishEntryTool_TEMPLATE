@@ -128,7 +128,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                                      dss = dateSampleString, 
                                      tss = timeSampleString, f = file)
       # Convert species abbreviations to common names
-      fishInfoNEW <- convertSpeciesAbbreviations(x = fishInfoNEW, fn = fishNames)
+      fishInfoNEW <- convertSpeciesAbbreviations(x = fishInfoNEW, fn = fishNames, 
+                                                 f = force_species)
       # Convert the tag columns to match the new format
       fishInfoNEW <- convertTagColumns(fin = fishInfoNEW)
         
@@ -249,7 +250,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     checkForNew(colName = "otu", new = newFI, db = fishInfoDB,
                 is = fishInfoIS, f = force_species)
     checkDuplicateFishIDs(new = newFI, is = fishInfoIS, db = fishInfoDB)
-    checkFishLengthWeight(db = fishInfoDB, new = newFI, is = fishInfoIS, 
+    checkFishLengthWeight(db = fishInfoDB, new = newFI,
                           fl = force_fishLength, fw = force_fishWeight)
     checkForRepeats(colName = "sampleID", new = newFI, db = fishInfoDB, 
                     is = fishInfoIS)
