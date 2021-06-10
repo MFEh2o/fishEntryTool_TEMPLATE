@@ -4,8 +4,23 @@
 # Packages ----------------------------------------------------------------
 library(tidyverse)
 
+# tochar ------------------------------------------------------------------
+# shortcut for converting all columns in a data frame to character
+tochar <- function(df){
+  assertDataFrame(df)
+  
+  df2 <- df %>% 
+    mutate(across(everything(), 
+                  as.character))
+  return(df2)
+}
+
 # getHeader ---------------------------------------------------------------
-getHeader <- function(d = cur){
+getHeader <- function(d){
+  # Check inputs
+  assertDataFrame(d)
+  
+  # Pull header
   header <- d[1:17, 1:2] %>%
     setNames(., c("key", "value")) %>%
     pivot_wider(names_from = key, values_from = value) %>%
@@ -39,7 +54,13 @@ getHeader <- function(d = cur){
 }
 
 # getCurData --------------------------------------------------------------
-getCurData <- function(d = cur){
+getCurData <- function(d){
+  # Check inputs
+  assertDataFrame(d, min.rows = 20)
+  assertSubset(c("fishNum", "fishLength", "fishWeight"), 
+               choices = as.character(slice(d, 18)))
+  
+  # Pull the data portion of the sample sheet
   curData <- d[19:nrow(d),] %>% 
     setNames(., d[18,]) %>%
     mutate(across(c("fishNum", "fishLength", "fishWeight"), as.numeric))
@@ -57,9 +78,12 @@ getCurData <- function(d = cur){
 }
 
 # convertSpeciesAbbreviations ---------------------------------------------
-convertSpeciesAbbreviations <- function(x, fn = fishNames){
-  assertDataFrame(x)
+convertSpeciesAbbreviations <- function(x, fn = fishNames, f){
+  assertDataFrame(x, col.names = "unique")
+  assertDataFrame(fn, col.names = "unique")
   assertChoice("otu", names(x))
+  assertChoice("abbreviation", names(fn))
+  assertFlag(f)
   
   # It's confusing that x$otu contains abbreviations. Let's rename it.
   x <- x %>%
@@ -70,20 +94,23 @@ convertSpeciesAbbreviations <- function(x, fn = fishNames){
   
   # Check whether any abbreviations from the data sheet don't show up in OTU (fishNames)
   if(any(!x$abbreviation %in% abbrsDB)){
-    if(force_species == FALSE){
+    if(f == FALSE){
       stop(paste0("Some species abbreviations (",
-                  paste(unique(x$abbreviation[!x$abbreviation %in% abbrsDB]), collapse = ", "),
+                  paste(unique(x$abbreviation[!x$abbreviation %in% abbrsDB]), 
+                        collapse = ", "),
                   ") are not in the OTU table. If you are certain this is the correct abbreviation, use the force_species argument to add it to this season's working database."))
     } # XXX need to provide an option to enter names instead of abbreviations, or maybe a layered check, where first it checks abbrs and then it checks names if the abbrs fail.
   }
   
   # Join the species names from fn (fishNames) and replace the abbreviations with those names.
+  i <- nrow(x)
   x <- x %>%
-    # XXX DEFINITELY need to write a check here to make sure the number of rows doesn't change. Should only be one row per abbreviation in OTU
     left_join(fn %>% 
-                select(commonName, abbreviation),
+                select(otu, abbreviation) %>%
+                # juuuuust in case there are multiple entries for one abbreviation, take the first one. This should not happen, but we need to be careful.
+                group_by(abbreviation) %>%
+                slice(1),
               by = "abbreviation") %>%
-    rename("otu" = "commonName") %>%
     mutate(otu = case_when(is.na(otu) & abbreviation == "RHS" ~ "redhorse",
                            is.na(otu) & abbreviation == "unidentifiable" ~
                              "fish_unidentifiable",
@@ -91,23 +118,32 @@ convertSpeciesAbbreviations <- function(x, fn = fishNames){
                            is.na(otu) & abbreviation == "BFN" ~ "bowfin",
                            TRUE ~ otu)) %>%
     select(-abbreviation)
+  j <- nrow(x)
+  
+  # Throw an error if the number of rows changes
+  if(i != j){
+    stop("Something went wrong with joining species names/abbreviations!")
+  }
   
   return(x)
 }
 
-# tochar ------------------------------------------------------------------
-# shortcut for converting all columns in a data frame to character
-tochar <- function(df){
-  assertDataFrame(df)
-  
-  df2 <- df %>% 
-    mutate(across(everything(), 
-                  as.character))
-  return(df2)
-}
+
 
 # makeFishInfoNEW ---------------------------------------------------------
-makeFishInfoNEW <- function(d = curData, h = header, dss = dateSampleString, tss = timeSampleString, f = file){
+makeFishInfoNEW <- function(d = curData, h = header, dss = dateSampleString, 
+                            tss = timeSampleString, f = file){
+  # Check inputs
+  assertDataFrame(curData, col.names = "unique")
+  assertList(h)
+  assertSubset(c("projectID", "metadataID", "lakeID", "siteName", "gear"), 
+               choices = names(h))
+  assertChoice("fishNum", names(d))
+  assertCharacter(dss, len = 1)
+  assertCharacter(tss, len = 1)
+  assertCharacter(f, len = 1)
+  
+  # Make fishInfoNEW
   fishInfoNEW <- d %>%
     mutate(projectID = h$projectID,
            metadataID = h$metadataID,
@@ -123,9 +159,10 @@ makeFishInfoNEW <- function(d = curData, h = header, dss = dateSampleString, tss
 
 # convertTagColumns -------------------------------------------------------
 convertTagColumns <- function(fin = fishInfoNEW){
-  assertDataFrame(fin)
-  assertSubset(c("tagApply", "tagRecapture", "tagApplyType", "tagRecaptureType", 
-                 "oldTag", "fishID"), names(fin))
+  assertDataFrame(fin, col.names = "unique")
+  assertSubset(c("tagApply", "tagRecapture", "tagApplyType", 
+                 "tagRecaptureType", "oldTag", "fishID"), names(fin))
+  
   
   # Make sure all tags are either 'pit', 'floy', or NA
   assertSubset(fin$tagApplyType, choices = c("pit", "floy", NA))
@@ -176,18 +213,23 @@ convertTagColumns <- function(fin = fishInfoNEW){
   # XXX what to do about oldTag?
   # Reformat the tag columns
   tags <- fin %>%
-    select(tagApply, tagRecapture, tagApplyType, tagRecaptureType, oldTag, fishID) %>%
-    mutate(pitApply = case_when(!is.na(tagApply) & tagApplyType == "pit" ~ tagApply,
+    select(tagApply, tagRecapture, tagApplyType, tagRecaptureType, 
+           oldTag, fishID) %>%
+    mutate(pitApply = case_when(!is.na(tagApply) & tagApplyType == "pit" ~ 
+                                  tagApply,
                                 TRUE ~ NA_character_),
-           floyApply = case_when(!is.na(tagApply) & tagApplyType == "floy" ~ tagApply,
+           floyApply = case_when(!is.na(tagApply) & tagApplyType == "floy" ~ 
+                                   tagApply,
                                  TRUE ~ NA_character_),
-           pitRecapture = case_when(!is.na(tagRecapture) & tagRecaptureType == "pit" ~
+           pitRecapture = case_when(!is.na(tagRecapture) & 
+                                      tagRecaptureType == "pit" ~
                                       tagRecapture,
                                     TRUE ~ NA_character_),
-           floyRecapture = case_when(!is.na(tagRecapture) & tagRecaptureType == "floy" ~
+           floyRecapture = case_when(!is.na(tagRecapture) & 
+                                       tagRecaptureType == "floy" ~
                                        tagRecapture,
                                      TRUE ~ NA_character_)) %>%
-    select(-oldTag) %>%
+    select(-oldTag) %>% # XXX for now, just removing oldTag.
     select(-c(tagApply, tagRecapture, tagApplyType, tagRecaptureType))
   
   # Join the reformatted tag columns back to fishInfoNEW and remove the old format
@@ -202,6 +244,17 @@ convertTagColumns <- function(fin = fishInfoNEW){
 # makeFishSamplesNEW ------------------------------------------------------
 makeFishSamplesNEW <- function(h = header, dss = dateSampleString, 
                                tss = timeSampleString, f = file){
+  # Check inputs
+  assertList(h)
+  assertCharacter(dss, len = 1)
+  assertCharacter(tss, len = 1)
+  assertCharacter(f, len = 1)
+  assertSubset(c("lakeID", "siteName", "gear", "metadataID", "dateSample", "projectID", "lakeID", "dataRecorder", "dataEnteredBy", "effortUnits", "crew", "useCPUE"), choices = names(h)) # XXX updateID?
+  assertDate(h$dateSample)
+  assertCharacter(as.character(h$dateSample), len = 1, 
+                  pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}")
+  
+  # Make fishSamplesNEW
   fishSamplesNEW <- data.frame(key = names(h),
                                value = unname(unlist(h))) %>%
     pivot_wider(names_from = key, values_from = value) %>%
@@ -211,12 +264,7 @@ makeFishSamplesNEW <- function(h = header, dss = dateSampleString,
            dayOfYear = as.numeric(strftime(strptime(dateSample,
                                                     format = "%Y-%m-%d"),
                                            format = "%j")),
-           entryFile = f,
-           projectID = h$projectID,
-           lakeID = h$lakeID,
-           dataRecorder = h$dataRecorder,
-           dataEnteredBy = h$dataEnteredBy,
-           updateID = h$updateID) %>%
+           entryFile = f) %>%
     select(-siteName)
   
   # Add nAnglers column based on crew only if effortUnits == angler_hours. 
@@ -242,6 +290,17 @@ makeFishSamplesNEW <- function(h = header, dss = dateSampleString,
 makeFishOtolithsNEW <- function(d = curData, h = header, 
                                 dss = dateSampleString, 
                                 tss = timeSampleString){
+  # Check inputs
+  assertDataFrame(d, col.names = "unique")
+  assertList(h)
+  assertCharacter(dss, len = 1)
+  assertCharacter(tss, len = 1)
+  assertSubset(c("otolithSample", "fishNum", "fishLength", "fishWeight"),
+               choices = names(d))
+  assertSubset(c("lakeID", "siteName", "gear", "metadataID"),
+               choices = names(h))
+  
+  # Make fishOtolithsNEW
   fishOtolithsNEW <- d %>%
     filter(otolithSample == 1) %>%
     select(fishNum, fishLength, fishWeight) %>%
@@ -258,6 +317,17 @@ makeFishOtolithsNEW <- function(d = curData, h = header,
 makeFishSpinesNEW <- function(d = curData, h = header, 
                                 dss = dateSampleString, 
                                 tss = timeSampleString){
+  # Check inputs
+  assertDataFrame(d, col.names = "unique")
+  assertList(h)
+  assertCharacter(dss, len = 1)
+  assertCharacter(tss, len = 1)
+  assertSubset(c("spineSample", "fishNum", "fishLength", "fishWeight"),
+               choices = names(d))
+  assertSubset(c("lakeID", "siteName", "gear", "metadataID"),
+               choices = names(h))
+  
+  # Make fishSpinesNEW
   fishSpinesNEW <- d %>%
     filter(spineSample == 1) %>%
     select(fishNum, fishLength, fishWeight) %>%
@@ -273,6 +343,17 @@ makeFishSpinesNEW <- function(d = curData, h = header,
 makeFishScalesNEW <- function(d = curData, h = header, 
                               dss = dateSampleString, 
                               tss = timeSampleString){
+  # Check inputs
+  assertDataFrame(d, col.names = "unique")
+  assertList(h)
+  assertCharacter(dss, len = 1)
+  assertCharacter(tss, len = 1)
+  assertSubset(c("scaleSample", "fishNum", "fishLength", "fishWeight"),
+               choices = names(d))
+  assertSubset(c("lakeID", "siteName", "gear", "metadataID"),
+               choices = names(h))
+  
+  # Make fishScalesNEW
   fishScalesNEW <- curData %>%
     filter(scaleSample == 1) %>%
     select(fishNum, fishLength, fishWeight) %>%
@@ -288,6 +369,17 @@ makeFishScalesNEW <- function(d = curData, h = header,
 makeFishDietsNEW <- function(d = curData, h = header, 
                               dss = dateSampleString, 
                               tss = timeSampleString){
+  # Check inputs
+  assertDataFrame(d, col.names = "unique")
+  assertList(h)
+  assertCharacter(dss, len = 1)
+  assertCharacter(tss, len = 1)
+  assertSubset(c("dietSampled", "fishNum", "otu"),
+               choices = names(d))
+  assertSubset(c("lakeID", "siteName", "gear", "metadataID", "dateSample"),
+               choices = names(h))
+  
+  # Make fishDietsNEW
   fishDietsNEW <- curData %>%
     filter(dietSampled == 1) %>%
     select(fishNum, otu) %>%
@@ -302,7 +394,7 @@ makeFishDietsNEW <- function(d = curData, h = header,
 # reverseRegex ------------------------------------------------------------
 rr <- function(vec, unique = F){
   # Check that `vec` is a character vector that has at least some non-missing entries
-  checkmate::assertCharacter(vec, all.missing = F)
+  assertCharacter(vec, all.missing = F)
   
   # Classify each character as uppercase (A), lowercase (a), or digit (0). Leave punctuation marks as they are (because for my use case, different punctuation = different format)
   classified <- vec %>%
