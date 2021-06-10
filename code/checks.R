@@ -610,9 +610,44 @@ checkClipRecapture <- function(new, db, is, f){
 }
 
 # checkTagFormats ---------------------------------------------------------
-checkTagFormats <- function(new, fp, ff){
-  # insert code here to check that pit and floy tags match appropriate regex
-  # fp is going to be "force_pitFormat", and ff will be "force_floyFormat" (or something like that.)
+checkTagFormats <- function(new, fp = force_pitFormat, ff = force_floyFormat){
+  # Check inputs
+  assertDataFrame(new, col.names = "unique")
+  assertSubset(c("pitApply", "pitRecapture", "floyApply", "floyRecapture"),
+               choices = names(new))
+  assertFlag(fp)
+  assertFlag(ff)
+  
+  # Check tag formats
+  ## Pit
+  pitPattern <- "" # XXX NEED TO WRITE THIS! See GH issue #150
+  pitProblems <- new %>%
+    select(fishID, "apply" = pitApply, "recapture" = pitRecapture) %>%
+    pivot_longer(cols = c("apply", "recapture"), names_to = "type", values_to = "tag") %>%
+    filter(!is.na(tag),
+           !str_detect(tag, pattern = pitPattern))
+  
+  if(nrow(pitProblems) > 0){
+    stop(paste0("Some pit tag numbers don't match any expected pit tag formats:\n\n",
+                paste0(capture.output(pitProblems), collapse = "\n"), 
+                "\n\nIf you're sure you want to enter these tags, use ", 
+                deparse(substitute(fp)), "."))
+  }
+  
+  ## Floy
+  floyPattern <- "" # XXX NEED TO WRITE THIS! See GH issue #150
+  floyProblems <- new %>%
+    select(fishID, "apply" = floyApply, "recapture" = floyRecapture) %>%
+    pivot_longer(cols = c("apply", "recapture"), names_to = "type", values_to = "tag") %>%
+    filter(!is.na(tag),
+           !str_detect(tag, pattern = floyPattern))
+  
+  if(nrow(floyProblems) > 0){
+    stop(paste0("Some floy tag numbers don't match any expected floy tag formats:\n\n",
+                paste0(capture.output(floyProblems), collapse = "\n"), 
+                "\n\nIf you're sure you want to enter these tags, use ", 
+                deparse(substitute(ff)), "."))
+  }
 }
 
 # vonB --------------------------------------------------------------------

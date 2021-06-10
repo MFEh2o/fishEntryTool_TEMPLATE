@@ -73,8 +73,16 @@ getCurData <- function(d){
 
   # Change name from 'species' to 'otu' if needed
   if("species" %in% names(curData)){
-    curData <- curData %>%
-      rename("otu" = species)
+    curData <- curData %>% rename("otu" = species)
+  }
+  
+  # Change "sampled" to "sample" for spine and scale. For some reason, otolith and diet stay as "sampled"
+  if("spineSampled" %in% names(curData)){
+    curData <- curData %>% rename("spineSample" = spineSampled)
+  }
+  
+  if("scaleSampled" %in% names(curData)){
+    curData <- curData %>% rename("scaleSample" = scaleSampled)
   }
   
   return(curData)

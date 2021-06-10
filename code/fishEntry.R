@@ -47,7 +47,9 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                        force_pitApply = F,
                        force_floyApply = F,
                        force_vonB = F,
-                       force_lakeSpecies = F){
+                       force_lakeSpecies = F,
+                       force_pitFormat = F,
+                       force_floyFormat = F){
   
   source(file.path(funcdir, "dbUtil.R")) # load the dbUtil functions
   
@@ -141,7 +143,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       
       # Get otolith data -------------------------------------------------
       # Check for otoliths pulled and generate a log of fish otoliths
-      if("otolithSample" %in% names(curData)){
+      if("otolithSampled" %in% names(curData)){
         # If any otoliths were taken
         if(any(curData$otolithSample == 1)){
           # Load the log if it exists
@@ -159,7 +161,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       # Get spine data -------------------------------------------------
       # Check for spines pulled and generate a log of fish spines
       if("spineSample" %in% names(curData)){
-        if(any(curData$spineSample == 1)){
+        if(any(!is.na(curData$spineSample) & curData$spineSample == 1)){
           if("fishSpinesLOG.csv" %in% list.files(isdir)){
             fishSpinesLOG <- read.csv(here(isdir, "fishSpinesLOG.csv"),
                                       header = T, stringsAsFactors = F)
@@ -173,7 +175,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       # Get scale data -------------------------------------------------
       # Check for scales pulled and generate a log of fish scales
       if("scaleSample" %in% names(curData)){
-        if(any(curData$scaleSample == 1)){
+        if(any(!is.na(curData$scaleSample) & curData$scaleSample == 1)){
           if("fishScalesLOG.csv" %in% list.files(isdir)){
             fishScalesLOG <- read.csv(here(isdir, "fishScalesLOG.csv"),
                                       header = T, stringsAsFactors = F)
@@ -187,7 +189,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       # Get diet data -------------------------------------------------
       # Check for diets taken and generate a log of diets
       if("dietSampled" %in% names(curData)){
-        if(any(curData$dietSampled == 1)){
+        if(any(!is.na(curData$dietSampled) & curData$dietSampled == 1)){
           if("fishDietsLOG.csv" %in% list.files(isdir)){
             fishDietsLOG <- read.csv(here(isdir, "fishDietsLOG.csv"),
                                      header = T, stringsAsFactors = F)
@@ -215,6 +217,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     
     # Run checks --------------------------------------------------------------
     # Note that I run these checks *before* adding the new compiled data to the in-season database. Otherwise, I'd have to separate out the new IS data from the old IS data in every check function, which is super tedious.
+    binary <- c(NA, "1", "0", 1, 0)
     # FISH_SAMPLES
     checkForNew(colName = "lakeID", new = newFS, db = lakesDB, 
                 is = fishSamplesIS, f = force_lakeID)
@@ -230,6 +233,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
                 is = fishSamplesIS, f = force_metadataID)
     checkForNew(colName = "projectID", new = newFS, db = fishSamplesDB, 
                 is = fishSamplesIS, f = force_newProjectID)
+    retiredProjectIDsCheck(new = newFS, f = force_retiredProjectID)
     assertSubset(newFS$useCPUE, 
                  choices = unique(fishSamplesDB$useCPUE)) # no force option
     assertSubset(newFS$useSampleMarkRecap, 
@@ -246,7 +250,6 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     checkRangeLimits(colName = "effort", new = newFS,
                      f = force_effort, minVal = 0, maxVal = 24,
                      allowMinEqual = T, allowMaxEqual = F)
-    retiredProjectIDsCheck(new = newFS, f = force_retiredProjectID)
     
     # FISH_INFO
     checkForNew(colName = "otu", new = newFI, db = fishInfoDB,
@@ -270,8 +273,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     vonBCheck(new = newFI, db = fishInfoDB, is = fishInfoIS, f = force_vonB)
     checkLakeSpecies(new = newFI, db = fishInfoDB, is = fishInfoIS, 
                      f = force_lakeSpecies)
+    # checkTagFormats(new = newFI, fp = force_pitFormat, ff = force_floyFormat) # XXX un-comment this once you've written the regular expression for the pit and floy tag formats (see GH 150)
 
-    
     # Update tables with new entries ------------------------------------------
     fishInfoIS <- bind_rows(tochar(fishInfoIS), tochar(newFI))
     fishSamplesIS <- bind_rows(tochar(fishSamplesIS), tochar(newFS))
