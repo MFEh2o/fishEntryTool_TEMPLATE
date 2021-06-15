@@ -1,45 +1,63 @@
-# function for generating in-season database files from minnow trap datasheets
-# 2019-03-20
-# SEJ
+# Function for generating in-season database files from minnow trap datasheets
+# Originally developed by Stuart E. Jones
+# Last updated by Kaija Gahm, June 2021
 
-Sys.setenv(tz="America/Chicago")
+# Show full text of errors and warnings
+options(warning.length = 6000L, error.length = 6000L)
 
-updateMinnowTrap<-function(headerRows=17,dbdir="~/Documents/Research/MFE/database/",db="MFEdb.db",funcdir="~/Documents/Research/MFE/database/db/",
-                     force_lakeID=FALSE,
-                     force_siteID=FALSE,
-                     force_dayOfYear=FALSE,
-                     force_gear=FALSE,
-                     force_sampleGroup=FALSE,
-                     force_effort=FALSE,
-                     force_effortUnits=FALSE,
-                     force_distanceShocked=FALSE,
-                     force_metadataID=FALSE,
-                     force_projectID=FALSE,
-                     force_species=FALSE,
-                     force_fishLength=FALSE,
-                     force_fishWeight=FALSE,
-                     force_clip=FALSE
+# Load packages -----------------------------------------------------------
+library(tidyverse)
+library(here)
+library(checkmate)
+library(lubridate)
+source(here("code", "supportingFuns.R"))
+source(here("code", "checks.R"))
+Sys.setenv(tz = "America/Chicago")
+
+updateMinnowTrap <- function(headerRows = 17, dbdir = dbdir, 
+                             db = db, funcdir = funcdir,
+                     force_lakeID = FALSE,
+                     force_siteID = FALSE,
+                     force_dayOfYear = FALSE,
+                     force_gear = FALSE,
+                     force_sampleGroup = FALSE,
+                     force_effort = FALSE,
+                     force_effortUnits = FALSE,
+                     force_distanceShocked = FALSE,
+                     force_metadataID = FALSE,
+                     force_projectID = FALSE,
+                     force_species = FALSE,
+                     force_fishLength = FALSE,
+                     force_fishWeight = FALSE,
+                     force_clip = FALSE
                     ){
 
-  source(paste(funcdir,"dbUtil.R",sep=""))
+  source(file.path(funcdir, "dbUtil.R")) # load the dbUtil functions
   
-  # load tables from database
-  lakesDB=dbTable("LAKES")
-  fishSamplesDB=dbTable("FISH_SAMPLES")
-  fishInfoDB=dbTable("FISH_INFO")
-  otu=dbTable("OTU")
-  fishNames=otu[otu$grouping=="fish",]
+  # Load database tables ---------------------------------------------------
+  message("Loading database tables...")
+  lakesDB <- suppressWarnings(dbTable("lakes"))
+  sitesDB <- suppressWarnings(dbTable("sites"))
+  fishSamplesDB <- suppressWarnings(dbTable("fish_samples"))
+  fishInfoDB <- suppressWarnings(dbTable("fish_info"))
+  otu <- suppressWarnings(dbTable("otu"))
 
-  # load in-season database files
-  if("fishInfoIS.csv"%in%list.files()){
-    fishInfoIS=read.csv("fishInfoIS.csv",header=TRUE,stringsAsFactors=FALSE)
+  # Load in-season db files ------------------------------------------------
+  # (or initialize them if they don't already exist)
+  message("Loading or initializing in-season db files...")
+  ## FISH_INFO
+  if("fishInfoIS.csv" %in% list.files(isdir)){
+    fishInfoIS <- read.csv(here(isdir, "fishInfoIS.csv"), 
+                           header = T, stringsAsFactors = F)
   }else{
-    fishInfoIS=setNames(data.frame(matrix(ncol=ncol(fishInfoDB),nrow=0)),colnames(fishInfoDB))
+    fishInfoIS <- fishInfoDB[FALSE, ]
   }
-  if("fishSampleIS.csv"%in%list.files()){
-    fishSamplesIS=read.csv("fishSamplesIS.csv",header=TRUE,stringsAsFactors=FALSE)
+  ## FISH_SAMPLES
+  if("fishSamplesIS.csv" %in% list.files(isdir)){
+    fishSamplesIS <- read.csv(here(isdir, "fishSamplesIS.csv"), 
+                              header = T, stringsAsFactors = F)
   }else{
-    fishSamplesIS=setNames(data.frame(matrix(ncol=ncol(fishSamplesDB),nrow=0)),colnames(fishSamplesDB))
+    fishSamplesIS <- fishSamplesDB[FALSE, ]
   }
 
   # check which files have been compiled and which have not in the directory
