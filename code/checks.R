@@ -5,28 +5,37 @@ expectedEffortUnits <- c("angler_hours", "electrofishing_hours",
                          "meters", "trap_hours", NA, "seine_pulls")
 
 # checkHeader function ----------------------------------------------------
-checkHeader <- function(h = header){
+checkHeader <- function(h = header, f = file){
   # Checks for inputs
   assertList(h, names = "unique")
   assertSubset(c("comments", "distanceShocked", "gear", "effortUnits", "crew", "dateSet", "dateSample", "dateTimeSet", "dateTimeSample"), choices = names(h))
   
-  # Define required fields for electrofishing vs. not.
+  # Define required fields for electrofishing vs. not, and for minnow traps
   requiredElectro <- h[!names(h) == "comments"]
   requiredNonElectro <- h[!names(h) %in% c("comments", "distanceShocked")]
+  requiredMinnow <- h[!names(h) %in% c("comments", "distanceShocked", "siteName")]
   
   # Check that all required fields are present (different requirements for electrofishing vs. not)
   # Here, we define missing as either blank ("") or NA (is.na())
   if(h$gear == "BE"){
     if(any(is.na(requiredElectro)|requiredElectro == "")){
-      stop(paste0("Required header information is incomplete in ", file, 
+      stop(paste0("Required header information is incomplete in ", f, 
                   ". You're missing: ", 
                   paste(names(requiredElectro[requiredElectro == ""|
                                                 is.na(requiredElectro)]), 
                         collapse = ", ")))
     }
+  }else if(isMinnow){
+    if(any(is.na(requiredMinnow)|requiredMinnow == "")){
+      stop(paste0("Required header information is incomplete in ", f,
+                  ". You're missing: ",
+                  paste(names(requiredMinnow[requiredMinnow == ""|
+                                                   is.na(requiredMinnow)]),
+                        collapse = ", ")))
+    }
   }else{
     if(any(is.na(requiredNonElectro)|requiredNonElectro == "")){
-      stop(paste0("Required header information is incomplete in ", file,
+      stop(paste0("Required header information is incomplete in ", f,
                   ". You're missing: ",
                   paste(names(requiredNonElectro[requiredNonElectro == ""|
                                                    is.na(requiredNonElectro)]),
