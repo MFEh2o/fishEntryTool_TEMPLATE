@@ -78,16 +78,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, # XXX add sam
   message("Finding files to compile...")
   beenCompiled <- unique(fishInfoIS$entryFile)
   filenames <- list.files(path = here("sampleSheets"), 
-                          pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}\\.csv")
+                          pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}\\.csv|minnowtrap")
   toCompile <- filenames[!filenames %in% beenCompiled]
-  
-  # Do the same for minnow trap files
-  filenamesMT <- list.files(path = here("sampleSheets"),
-                            pattern = "_minnowtrap_")
-  toCompileMT <- filenamesMT[!filenamesMT %in% beenCompiled]
-  
-  # Put together the names of all the files to compile, including minnow trap
-  toCompileAll <- c(toCompile, toCompileMT)
   
   # Initialize data frames to hold the new FISH_INFO and FISH_SAMPLES data
   newFI <- data.frame() # info
@@ -104,9 +96,9 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, # XXX add sam
   }else{
     message("Compiling sample sheets")
     # There are files to be compiled; generate rows to append
-    for(i in 1:length(toCompileAll)){
+    for(i in 1:length(toCompile)){
       # Save the file name as a variable `file` for future use
-      file <- toCompileAll[i]
+      file <- toCompile[i]
       message(paste0("Compiling file ", i, ": ", file))
       
       # Set a flag to tell us if this is a minnow trap data sheet
@@ -119,18 +111,22 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, # XXX add sam
       
       # Get header --------------------------------------------------------
       # Pull header info
-      header <- getHeader(d = cur, hr = ifelse(isMinnow, headerRows-1, headerRows))
+      header <- getHeader(d = cur, hr = ifelse(isMinnow, headerRows - 1, headerRows))
       
       # Check the header values
       checkHeader(h = header, f = file)
       
       # Get data ----------------------------------------------------------
       # Tabular data
-      curData <- getCurData(cur, hr = headerRows)
+      curData <- getCurData(cur, hr = ifelse(isMinnow, headerRows - 1, headerRows))
       
       # Get date and time strings for sampleID's and fishID's
       dateSampleString <- date(header$dateTimeSample) %>% str_remove_all(., "-")
       timeSampleString <- paste0(hour(header$dateTimeSample), minute(header$dateTimeSample))
+      
+      # Make FISH_SAMPLES --------------------------------------------------
+      fishSamplesNEW <- makeFishSamplesNEW(h = header, dss = dateSampleString, 
+                                           tss = timeSampleString, f = file)
 
       # Make FISH_INFO -----------------------------------------------------
       fishInfoNEW <- makeFishInfoNEW(d = curData, h = header, 
@@ -141,10 +137,6 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, # XXX add sam
                                                  f = force_species)
       # Convert the tag columns to match the new format
       fishInfoNEW <- convertTagColumns(fin = fishInfoNEW)
-        
-      # Make FISH_SAMPLES --------------------------------------------------
-      fishSamplesNEW <- makeFishSamplesNEW(h = header, dss = dateSampleString, 
-                                           tss = timeSampleString, f = file)
       
       # Get otolith data -------------------------------------------------
       # Check for otoliths pulled and generate a log of fish otoliths

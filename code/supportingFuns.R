@@ -259,13 +259,17 @@ convertTagColumns <- function(fin = fishInfoNEW){
 
 # makeFishSamplesNEW ------------------------------------------------------
 makeFishSamplesNEW <- function(h = header, dss = dateSampleString, 
-                               tss = timeSampleString, f = file){
+                               tss = timeSampleString, f = file, m = isMinnow,
+                               dat = curData){
   # Check inputs
   assertList(h)
   assertCharacter(dss, len = 1)
   assertCharacter(tss, len = 1)
   assertCharacter(f, len = 1)
-  assertSubset(c("lakeID", "siteName", "gear", "metadataID", "dateSample", "projectID", "lakeID", "dataRecorder", "dataEnteredBy", "effortUnits", "crew", "useCPUE"), choices = names(h)) # XXX updateID?
+  assertSubset(c("lakeID", "gear", "metadataID", "dateSample", "projectID", "lakeID", "dataRecorder", "dataEnteredBy", "effortUnits", "crew", "useCPUE"), choices = names(h)) # XXX updateID?
+  if(!m){
+    assertChoice("siteName", choices = names(h))
+  }
   h$dateSet <- as.character(h$dateSet)
   h$dateSample <- as.character(h$dateSample)
   h$dateTimeSet <- as.character(h$dateTimeSet)
@@ -278,11 +282,24 @@ makeFishSamplesNEW <- function(h = header, dss = dateSampleString,
                   pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}\\s[0-9]{2}:[0-9]{2}:[0-9]{2}")
   assertCharacter(h$dateTimeSample, len = 1, 
                   pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}\\s[0-9]{2}:[0-9]{2}:[0-9]{2}")
+  assertFlag(m)
+  assertDataFrame(dat)
+  
+  # If the data sheet is a minnow trap sheet, get the unique trapNumbers
+  if(m){
+    assertChoice("trapNumber", choices = names(dat))
+    trapNumbers <- unique(dat$trapNumber)
+    # insert a period between MT and the number
+    assertCharacter(trapNumbers, pattern = "MT[0-9]{3}")
+    trapNumbers <- str_replace(trapNumbers, "MT", "MT.")
+  }
   
   # Make fishSamplesNEW
   fishSamplesNEW <- data.frame(key = names(h),
                                value = purrr::reduce(h, c)) %>%
     pivot_wider(names_from = key, values_from = value) %>%
+    {if(m){slice(., rep(1:n(), length(trapNumbers))) %>%
+        mutate(siteName = trapNumbers)} else .} %>% # XXX have to introduce periods into the minnow trap names?
     mutate(siteID = paste(lakeID, siteName, sep = "_"),
            sampleID = paste(siteID, dss, tss,
                             gear, metadataID, sep = "_"),
