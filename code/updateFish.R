@@ -1,27 +1,23 @@
 # updateFish.R - wrapper for fishEntry.R
-# 4-18-2019
-# SEJ
+# 4-18-2019, SEJ
+# Updated June 2021 by KG
 
-# run the code below to update fish data with new datasheets that have been entered into the template
-# and saved as .csv files
+# Load packages -----------------------------------------------------------
+library(tidyverse)
+library(here)
 
-#setwd("C:/Users/jones/OneDrive/temp_fishscapesCSVentries") #UNDERC lab computer wd
-#setwd("C:/Users/jones/OneDrive/temp_fishscapesCSVentries") #Colin's PC wd
+# Set file paths ----------------------------------------------------------
+# File paths are relative paths, written with the here` package
+dbdir <- here()
+db <- "MFEdb_20210528.db" # most recent version of the database, stored in the root directory
+funcdir <- here("code") # directory where the code/functions is stored
+isdir <- here("inSeason") # directory where the in-season db files will be stored
+
+# Run the code below to update fish data with new datasheets that have been entered into the template and saved as .csv files
 
 # Load the entry function
-source('C:/Users/jones/Documents/Summer2019/Fish/fishEntryTool/fishEntry.R') #lab computer
-#source('C:/Users/jones/Box Sync/NDstuff/ND_R/fishEntryTool/fishEntry.R') #colin 's computer
+source(here("code", "fishEntry.R"))
 
-# # set variables - Colin's computer
-# dbdir="C:/Users/jones/Box Sync/NDstuff/ND_R/"
-# db="MFEdb.db"
-# funcdir="C:/Users/jones/Box Sync/NDstuff/ND_R/fishEntryTool/"
-
-# set variables - UNDERC lab computer
-dbdir="C:/Users/jones/Documents/Summer2019/Database/current/"
-db="MFEdb.db"
-funcdir="C:/Users/jones/Documents/Summer2019/Database/dbFunctions/"
-
-#update
-updateFish(dbdir=dbdir,db=db,funcdir=funcdir, force_siteID = T, force_sampleGroup = T, force_clip = T, force_species = T, force_metadataID = T, force_fishLength = T, force_effort = T, force_distanceShocked = T, force_effortUnits = T)
+# Run code to update in-season files
+updateFish(headerRows = 18, dbdir = dbdir, db = db, funcdir = funcdir, isdir = isdir)
 
