@@ -1,6 +1,6 @@
 # Function for generating in-season database files from fish datasheets
 # Originally developed by Stuart E. Jones
-# Last updated by Kaija Gahm, May 2021
+# Last updated by Kaija Gahm, June 2021
 
 # Show full text of errors and warnings
 options(warning.length = 6000L, error.length = 6000L)
@@ -9,21 +9,12 @@ options(warning.length = 6000L, error.length = 6000L)
 library(tidyverse)
 library(here)
 library(checkmate)
-library(janitor)
 library(lubridate)
 source(here("code", "supportingFuns.R"))
 source(here("code", "checks.R"))
-
 Sys.setenv(tz = "America/Chicago")
 
-# (remove all of this at the end)
-dbdir <- here()
-db <- "MFEdb_20210528.db"
-funcdir <- here("code")
-isdir <- here("inSeason")
-# (remove the above)
-
-updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, 
+updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, # XXX add samplesheets dir
                        force_species = F,
                        force_lakeID = F,
                        force_siteID = F,
@@ -54,6 +45,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
   source(file.path(funcdir, "dbUtil.R")) # load the dbUtil functions
   
   # Load database tables ---------------------------------------------------
+  message("Loading database tables...")
   lakesDB <- suppressWarnings(dbTable("lakes"))
   sitesDB <- suppressWarnings(dbTable("sites"))
   fishSamplesDB <- suppressWarnings(dbTable("fish_samples"))
@@ -65,6 +57,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
   
   # Load in-season db files ------------------------------------------------
   # (or initialize them if they don't already exist)
+  message("Loading or initializing in-season db files...")
   ## FISH_INFO
   if("fishInfoIS.csv" %in% list.files(isdir)){
     fishInfoIS <- read.csv(here(isdir, "fishInfoIS.csv"), 
@@ -82,10 +75,19 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
   
   # Prepare to compile files -----------------------------------------------
   # Check which files have been compiled and which have not in the directory
+  message("Finding files to compile...")
   beenCompiled <- unique(fishInfoIS$entryFile)
   filenames <- list.files(path = here("sampleSheets"), 
                           pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}\\.csv")
   toCompile <- filenames[!filenames %in% beenCompiled]
+  
+  # Do the same for minnow trap files
+  filenamesMT <- list.files(path = here("sampleSheets"),
+                            pattern = "_minnowtrap_")
+  toCompileMT <- filenamesMT[!filenamesMT %in% beenCompiled]
+  
+  # Put together the names of all the files to compile, including minnow trap
+  toCompileAll <- c(toCompile, toCompileMT)
   
   # Initialize data frames to hold the new FISH_INFO and FISH_SAMPLES data
   newFI <- data.frame() # info
@@ -100,12 +102,15 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     # No files that have not been compiled into the in-season database
     "The in season database is up to date; no new files to compile"
   }else{
+    message("Compiling sample sheets")
     # There are files to be compiled; generate rows to append
-    for(i in 1:length(toCompile)){
-      message("Compiling sample sheets")
+    for(i in 1:length(toCompileAll)){
       # Save the file name as a variable `file` for future use
-      file <- toCompile[i]
+      file <- toCompileAll[i]
       message(paste0("Compiling file ", i, ": ", file))
+      
+      # Set a flag to tell us if this is a minnow trap data sheet
+      isMinnow <- ifelse(grepl("minnowtrap", file), TRUE, FALSE)
       
       # Get file ----------------------------------------------------------
       # Read in the current file, setting all blank cells to NA
@@ -114,14 +119,14 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
       
       # Get header --------------------------------------------------------
       # Pull header info
-      header <- getHeader(cur)
+      header <- getHeader(d = cur, hr = ifelse(isMinnow, headerRows-1, headerRows))
       
       # Check the header values
-      checkHeader(header)
+      checkHeader(h = header, f = file)
       
       # Get data ----------------------------------------------------------
       # Tabular data
-      curData <- getCurData(cur)
+      curData <- getCurData(cur, hr = headerRows)
       
       # Get date and time strings for sampleID's and fishID's
       dateSampleString <- date(header$dateTimeSample) %>% str_remove_all(., "-")
@@ -278,10 +283,14 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir,
     # Update tables with new entries ------------------------------------------
     fishInfoIS <- bind_rows(tochar(fishInfoIS), tochar(newFI))
     fishSamplesIS <- bind_rows(tochar(fishSamplesIS), tochar(newFS))
-    fishOtolithsLOG <- bind_rows(tochar(fishOtolithsLOG), tochar(newFO))
-    fishSpinesLOG <- bind_rows(tochar(fishSpinesLOG), tochar(newFP))
-    fishScalesLOG <- bind_rows(tochar(fishScalesLOG), tochar(newFC))
-    fishDietsLOG <- bind_rows(tochar(fishDietsLOG), tochar(newFD))
+    if(exists("fishOtolithsLOG")){
+      fishOtolithsLOG <- bind_rows(tochar(fishOtolithsLOG), tochar(newFO))}
+    if(exists("fishSpinesLOG")){
+      fishSpinesLOG <- bind_rows(tochar(fishSpinesLOG), tochar(newFP))}
+    if(exists("fishScalesLOG")){
+      fishScalesLOG <- bind_rows(tochar(fishScalesLOG), tochar(newFC))}
+    if(exists("fishDietsLOG")){
+      fishDietsLOG <- bind_rows(tochar(fishDietsLOG), tochar(newFD))}
     
     # write updates to files
     write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 
