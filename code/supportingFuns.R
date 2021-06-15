@@ -19,12 +19,13 @@ tochar <- function(df){
 }
 
 # getHeader ---------------------------------------------------------------
-getHeader <- function(d){
+getHeader <- function(d, hr){
   # Check inputs
   assertDataFrame(d)
+  assertNumeric(hr, len = 1)
   
   # Pull header
-  header <- d[1:17, 1:2] %>%
+  header <- d[1:(hr-1), 1:2] %>%
     setNames(., c("key", "value")) %>%
     pivot_wider(names_from = key, values_from = value) %>%
     as.list()
@@ -57,15 +58,16 @@ getHeader <- function(d){
 }
 
 # getCurData --------------------------------------------------------------
-getCurData <- function(d){
+getCurData <- function(d, hr){
   # Check inputs
-  assertDataFrame(d, min.rows = 20)
+  assertDataFrame(d)
+  assertNumeric(hr, len = 1)
   assertSubset(c("fishNum", "fishLength", "fishWeight"), 
-               choices = as.character(slice(d, 18)))
+               choices = as.character(slice(d, hr)))
   
   # Pull the data portion of the sample sheet
-  curData <- d[19:nrow(d),] %>% 
-    setNames(., d[18,]) %>%
+  curData <- d[(hr + 1):nrow(d),] %>% 
+    setNames(., d[hr,]) %>%
     mutate(across(c("fishNum", "fishLength", "fishWeight"), as.numeric))
   
   curData <- curData %>%
@@ -174,6 +176,9 @@ convertTagColumns <- function(fin = fishInfoNEW){
   assertSubset(c("tagApply", "tagRecapture", "tagApplyType", 
                  "tagRecaptureType", "oldTag", "fishID"), names(fin))
   
+  # Convert tag types to lowercase
+  fin <- fin %>%
+    mutate(across(c("tagApplyType", "tagRecaptureType"), tolower))
   
   # Make sure all tags are either 'pit', 'floy', or NA
   assertSubset(fin$tagApplyType, choices = c("pit", "floy", NA))
