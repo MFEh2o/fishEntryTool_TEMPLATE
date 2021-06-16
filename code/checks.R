@@ -280,12 +280,12 @@ checkDuplicateFishIDs <- function(new, is, db){
 }
 
 # checkFishLengthWeight ---------------------------------------------------
-checkFishLengthWeight <- function(new, db, fl, fw){
+checkFishLengthWeight <- function(new, db, force_fishLength, force_fishWeight){
   # Check inputs
   assertDataFrame(new, col.names = "unique")
   assertDataFrame(db, col.names = "unique")
-  assertFlag(fl)
-  assertFlag(fw)
+  assertFlag(force_fishLength)
+  assertFlag(force_fishWeight)
   assertSubset(c("fishLength", "fishWeight", "entryFile", "otu"), 
                choices = names(new))
   assertSubset(c("fishLength", "fishWeight"), choices = names(db))
@@ -333,7 +333,9 @@ checkFishLengthWeight <- function(new, db, fl, fw){
       if(nrow(tooLong) > 0){
         if(fl == FALSE){
           stop(paste0("Found some fish that are longer than 3 sd above the mean for their species, ", x, ". They are:\n\n",
-                      paste0(capture.output(tooLong), collapse = "\n")))
+                      paste0(capture.output(tooLong), collapse = "\n"),
+                      "\n\nIf you're sure you want to enter these values, use ",
+                      deparse(substitute(fl)), "."))
         }
       }
       
@@ -341,7 +343,9 @@ checkFishLengthWeight <- function(new, db, fl, fw){
       if(nrow(tooShort) > 0){
         if(fl == FALSE){
           stop(paste0("Found some fish that are shorter than 3 sd below the mean for their species, ", x, ". They are:\n\n",
-                      paste0(capture.output(tooShort), collapse = "\n")))
+                      paste0(capture.output(tooShort), collapse = "\n"),
+                      "\n\nIf you're sure you want to enter these values, use ",
+                      deparse(substitute(fl)), "."))
         }
       }
     }
@@ -376,7 +380,9 @@ checkFishLengthWeight <- function(new, db, fl, fw){
       if(nrow(tooHeavy) > 0){
         if(fw == FALSE){
           stop(paste0("You report fishWeight heavier than the prediction based on a length-weight regression from our database for ", x, ". Here are the problematic rows:\n\n",
-                      paste0(capture.output(tooHeavy), collapse = "\n")))
+                      paste0(capture.output(tooHeavy), collapse = "\n"),
+                      "\n\nIf you're sure you want to enter these values, use ",
+                      deparse(substitute(fw)), "."))
         }
       }
       
@@ -384,7 +390,9 @@ checkFishLengthWeight <- function(new, db, fl, fw){
       if(nrow(tooLight) > 0){
         if(fw == FALSE){
           stop(paste0("You report fishWeight lighter than the prediction based on a length-weight regression from our database for ", x, ". Here are the problematic rows:\n\n",
-                      paste0(capture.output(tooLight), collapse = "\n")))
+                      paste0(capture.output(tooLight), collapse = "\n"),
+                      "\n\nIf you're sure you want to enter these values, use ",
+                      deparse(substitute(fw)), "."))
         }
       }
     }
