@@ -64,7 +64,7 @@ updateMinnowTrap <- function(headerRows = 17, dbdir = dbdir,
   beenCompiled=unique(fishInfoIS$entryFile)
   toCompile=list.files(pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}\\.csv")
   toCompile=toCompile[!(toCompile%in%beenCompiled)]
-  toCompile=toCompile[grepl("minnowtrap",toCompile)]
+  toCompile=toCompile[grepl("minnowtrap", toCompile)]
   if(length(toCompile)==0){
     #no files that have not been compiled into the in-season database
     print("The in season database is up to date; no new files to compile")
