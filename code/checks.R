@@ -5,7 +5,7 @@ expectedEffortUnits <- c("angler_hours", "electrofishing_hours",
                          "meters", "trap_hours", NA, "seine_pulls")
 
 # checkHeader function ----------------------------------------------------
-checkHeader <- function(h = header, f = file){
+checkHeader <- function(h = header, f = file, m = isMinnow){
   # Checks for inputs
   assertList(h, names = "unique")
   assertSubset(c("comments", "distanceShocked", "gear", "effortUnits", "crew", "dateSet", "dateSample", "dateTimeSet", "dateTimeSample"), choices = names(h))
@@ -25,7 +25,7 @@ checkHeader <- function(h = header, f = file){
                                                 is.na(requiredElectro)]), 
                         collapse = ", ")))
     }
-  }else if(isMinnow){
+  }else if(m){
     if(any(is.na(requiredMinnow)|requiredMinnow == "")){
       stop(paste0("Required header information is incomplete in ", f,
                   ". You're missing: ",
@@ -62,10 +62,10 @@ checkHeader <- function(h = header, f = file){
   # Check the date formats
   pat_dateTime <- "^[0-9]{4}\\-[0-9]{2}\\-[0-9]{2}\\s[0-9]{2}:[0-9]{2}:[0-9]{2}$"
   pat_date <- "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
-  assertCharacter(as.character(header$dateTimeSet), pattern = pat_dateTime)
-  assertCharacter(as.character(header$dateTimeSample), pattern = pat_dateTime)
-  assertCharacter(as.character(header$dateSet), pattern = pat_date)
-  assertCharacter(as.character(header$dateSample), pattern = pat_date)
+  assertCharacter(as.character(h$dateTimeSet), pattern = pat_dateTime)
+  assertCharacter(as.character(h$dateTimeSample), pattern = pat_dateTime)
+  assertCharacter(as.character(h$dateSet), pattern = pat_date)
+  assertCharacter(as.character(h$dateSample), pattern = pat_date)
 
 }
 

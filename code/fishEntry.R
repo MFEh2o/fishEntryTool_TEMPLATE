@@ -116,7 +116,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
                           hr = ifelse(isMinnow, headerRows - 1, headerRows))
       
       # Check the header values
-      checkHeader(h = header, f = file)
+      checkHeader(h = header, f = file, m = isMinnow)
       
       # Get data ----------------------------------------------------------
       # Tabular data
@@ -131,7 +131,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
       # Make FISH_SAMPLES --------------------------------------------------
       fishSamplesNEW <- makeFishSamplesNEW(h = header, dss = dateSampleString, 
                                            tss = timeSampleString, f = file, 
-                                           m = isMinnow)
+                                           m = isMinnow, dat = curData)
 
       # Make FISH_INFO -----------------------------------------------------
       fishInfoNEW <- makeFishInfoNEW(d = curData, h = header, 

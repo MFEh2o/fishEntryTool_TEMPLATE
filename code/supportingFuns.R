@@ -56,7 +56,7 @@ getHeader <- function(d, hr){
   if("siteName" %in% names(header)){
     if(header$siteName %in% c("wholeShoreline", "wholeshoreline", "wholeShore", 
                          "wholeshore", "WholeShore")){
-      message(paste0("Correcting siteName ", header$siteName, " to 'WholeShoreline'."))
+      message(paste0("Correcting siteName '", header$siteName, "' to 'WholeShoreline'."))
       header$siteName <- "WholeShoreline"
     }
     if(header$siteName %in% c("Deephole", "deephole", "DH", "deepHole")){
@@ -163,7 +163,7 @@ convertSpeciesAbbreviations <- function(x, fn = fishNames, f){
 makeFishInfoNEW <- function(d = curData, h = header, dss = dateSampleString, 
                             tss = timeSampleString, f = file, m = isMinnow){
   # Check inputs
-  assertDataFrame(curData, col.names = "unique")
+  assertDataFrame(d, col.names = "unique")
   assertList(h)
   assertSubset(c("projectID", "metadataID", "lakeID", "gear"), 
                choices = names(h))
