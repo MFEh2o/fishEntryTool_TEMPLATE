@@ -66,6 +66,25 @@ checkHeader <- function(h = header, f = file){
   assertCharacter(as.character(header$dateTimeSample), pattern = pat_dateTime)
   assertCharacter(as.character(header$dateSet), pattern = pat_date)
   assertCharacter(as.character(header$dateSample), pattern = pat_date)
+  
+  # Fix some common siteName capitalization errors
+  if("siteName" %in% names(h)){
+    if(h$siteName %in% c("wholeShoreline", "wholeshoreline", "wholeShore", 
+                         "wholeshore", "WholeShore")){
+      message(paste0("Correcting siteName ", h$siteName, " to 'WholeShoreline'."))
+      h$siteName <- "WholeShoreline"
+    }
+    if(h$siteName %in% c("Deephole", "deephole", "DH", "deepHole")){
+      message(paste0("Correcting siteName ", h$siteName, " to 'DeepHole'."))
+      h$siteName <- "DeepHole"
+    }
+  }
+  
+  # Fix common gear problem: adding fyke net number to gear, when it should just be FN
+  if(grepl("FN[0-9]+", h$gear)){
+    message(paste0("Correcting gear ", h$gear, " to 'FN'."))
+    h$gear <- "FN"
+  }
 }
 
 # Checks at the end against the in-season database and full database ----------
