@@ -75,14 +75,14 @@ checkHeader <- function(h = header, f = file){
       h$siteName <- "WholeShoreline"
     }
     if(h$siteName %in% c("Deephole", "deephole", "DH", "deepHole")){
-      message(paste0("Correcting siteName ", h$siteName, " to 'DeepHole'."))
+      message(paste0("Correcting siteName '", h$siteName, "' to 'DeepHole'."))
       h$siteName <- "DeepHole"
     }
   }
   
   # Fix common gear problem: adding fyke net number to gear, when it should just be FN
   if(grepl("FN[0-9]+", h$gear)){
-    message(paste0("Correcting gear ", h$gear, " to 'FN'."))
+    message(paste0("Correcting gear '", h$gear, "' to 'FN'."))
     h$gear <- "FN"
   }
 }
