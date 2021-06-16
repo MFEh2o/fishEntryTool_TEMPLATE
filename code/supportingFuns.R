@@ -404,7 +404,7 @@ makeFishScalesNEW <- function(d = curData, h = header,
                choices = names(h))
   
   # Make fishScalesNEW
-  fishScalesNEW <- curData %>%
+  fishScalesNEW <- d %>%
     filter(scaleSample == 1) %>%
     select(fishNum, fishLength, fishWeight) %>%
     mutate(fishID = paste(h$lakeID, h$siteName, dss,
