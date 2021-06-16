@@ -14,7 +14,7 @@ source(here("code", "supportingFuns.R"))
 source(here("code", "checks.R"))
 Sys.setenv(tz = "America/Chicago")
 
-updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, # XXX add samplesheets dir
+updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
                        force_species = F,
                        force_lakeID = F,
                        force_siteID = F,
@@ -77,7 +77,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, # XXX add sam
   # Check which files have been compiled and which have not in the directory
   message("Finding files to compile...")
   beenCompiled <- unique(fishInfoIS$entryFile)
-  filenames <- list.files(path = here("sampleSheets"), 
+  filenames <- list.files(path = ssdir, 
                           pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}\\.csv|minnowtrap")
   toCompile <- filenames[!filenames %in% beenCompiled]
   
@@ -106,7 +106,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, # XXX add sam
       
       # Get file ----------------------------------------------------------
       # Read in the current file, setting all blank cells to NA
-      cur <- read.csv(here("sampleSheets", file), 
+      cur <- read.csv(here(ssdir, file), 
                       na.strings = c("", " ", "NA"), header = F)
       
       # Get header --------------------------------------------------------
@@ -138,13 +138,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, # XXX add sam
                                      dss = dateSampleString, 
                                      tss = timeSampleString, f = file,
                                      m = isMinnow)
+      
       # Convert species abbreviations to common names
       fishInfoNEW <- convertSpeciesAbbreviations(x = fishInfoNEW, fn = fishNames, 
                                                  f = force_species)
-      # Convert the tag columns to match the new format
-      if(!isMinnow){
-        fishInfoNEW <- convertTagColumns(fin = fishInfoNEW)
-      }
       
       # Get otolith data -------------------------------------------------
       # Check for otoliths pulled and generate a log of fish otoliths
