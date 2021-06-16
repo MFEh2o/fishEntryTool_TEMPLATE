@@ -111,14 +111,18 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, # XXX add sam
       
       # Get header --------------------------------------------------------
       # Pull header info
-      header <- getHeader(d = cur, hr = ifelse(isMinnow, headerRows - 1, headerRows))
+      header <- getHeader(d = cur, 
+                          # minnow traps have a different number of header rows
+                          hr = ifelse(isMinnow, headerRows - 1, headerRows))
       
       # Check the header values
       checkHeader(h = header, f = file)
       
       # Get data ----------------------------------------------------------
       # Tabular data
-      curData <- getCurData(cur, hr = ifelse(isMinnow, headerRows - 1, headerRows))
+      curData <- getCurData(cur, 
+                            # minnow traps have a different number of header rows
+                            hr = ifelse(isMinnow, headerRows - 1, headerRows))
       
       # Get date and time strings for sampleID's and fishID's
       dateSampleString <- date(header$dateTimeSample) %>% str_remove_all(., "-")
@@ -126,17 +130,21 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, # XXX add sam
       
       # Make FISH_SAMPLES --------------------------------------------------
       fishSamplesNEW <- makeFishSamplesNEW(h = header, dss = dateSampleString, 
-                                           tss = timeSampleString, f = file)
+                                           tss = timeSampleString, f = file, 
+                                           m = isMinnow)
 
       # Make FISH_INFO -----------------------------------------------------
       fishInfoNEW <- makeFishInfoNEW(d = curData, h = header, 
                                      dss = dateSampleString, 
-                                     tss = timeSampleString, f = file)
+                                     tss = timeSampleString, f = file,
+                                     m = isMinnow)
       # Convert species abbreviations to common names
       fishInfoNEW <- convertSpeciesAbbreviations(x = fishInfoNEW, fn = fishNames, 
                                                  f = force_species)
       # Convert the tag columns to match the new format
-      fishInfoNEW <- convertTagColumns(fin = fishInfoNEW)
+      if(!isMinnow){
+        fishInfoNEW <- convertTagColumns(fin = fishInfoNEW)
+      }
       
       # Get otolith data -------------------------------------------------
       # Check for otoliths pulled and generate a log of fish otoliths
