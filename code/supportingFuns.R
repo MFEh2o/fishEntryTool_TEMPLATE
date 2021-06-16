@@ -13,8 +13,7 @@ tochar <- function(df){
   assertDataFrame(df)
   
   df2 <- df %>% 
-    mutate(across(everything(), 
-                  as.character))
+    mutate(across(everything(), as.character))
   return(df2)
 }
 
@@ -141,16 +140,17 @@ convertSpeciesAbbreviations <- function(x, fn = fishNames, f){
   return(x)
 }
 
-
-
 # makeFishInfoNEW ---------------------------------------------------------
 makeFishInfoNEW <- function(d = curData, h = header, dss = dateSampleString, 
-                            tss = timeSampleString, f = file){
+                            tss = timeSampleString, f = file, m = isMinnow){
   # Check inputs
   assertDataFrame(curData, col.names = "unique")
   assertList(h)
-  assertSubset(c("projectID", "metadataID", "lakeID", "siteName", "gear"), 
+  assertSubset(c("projectID", "metadataID", "lakeID", "gear"), 
                choices = names(h))
+  if(!m){
+    assertChoice("siteName", choices = names(h))
+  }
   assertChoice("fishNum", names(d))
   assertCharacter(dss, len = 1)
   assertCharacter(tss, len = 1)
@@ -158,14 +158,22 @@ makeFishInfoNEW <- function(d = curData, h = header, dss = dateSampleString,
   
   # Make fishInfoNEW
   fishInfoNEW <- d %>%
+    {if(m){
+      filter(., otu != "NFC") %>%
+        rename("siteName" = trapNumber) %>%
+        mutate(siteName = str_replace(siteName, "MT", "MT."))
+    } else{
+      mutate(., siteName = h$siteName)
+    }} %>%
     mutate(projectID = h$projectID,
            metadataID = h$metadataID,
-           sampleID = paste(h$lakeID, h$siteName, dss,
+           sampleID = paste(h$lakeID, siteName, dss,
                             tss, h$gear, metadataID, 
                             sep = "_"),
            fishNum = as.numeric(fishNum),
            fishID = paste(sampleID, fishNum, sep = "_"),
            entryFile = f)
+  
   assertNumeric(fishInfoNEW$fishNum, any.missing = F)
   return(fishInfoNEW)
 }
@@ -422,7 +430,7 @@ makeFishDietsNEW <- function(d = curData, h = header,
                choices = names(h))
   
   # Make fishDietsNEW
-  fishDietsNEW <- curData %>%
+  fishDietsNEW <- d %>%
     filter(dietSampled == 1) %>%
     select(fishNum, otu) %>%
     mutate(fishID = paste(h$lakeID, h$siteName, dss,
