@@ -52,6 +52,25 @@ getHeader <- function(d, hr){
   header$effort <- as.numeric(header$effort)
   # XXX should also enforce constraints on effort units
   
+  # Fix some common siteName capitalization errors
+  if("siteName" %in% names(header)){
+    if(header$siteName %in% c("wholeShoreline", "wholeshoreline", "wholeShore", 
+                         "wholeshore", "WholeShore")){
+      message(paste0("Correcting siteName ", header$siteName, " to 'WholeShoreline'."))
+      header$siteName <- "WholeShoreline"
+    }
+    if(header$siteName %in% c("Deephole", "deephole", "DH", "deepHole")){
+      message(paste0("Correcting siteName '", header$siteName, "' to 'DeepHole'."))
+      header$siteName <- "DeepHole"
+    }
+  }
+  
+  # Fix common gear problem: adding fyke net number to gear, when it should just be FN
+  if(grepl("FN[[:alnum:]]+", header$gear)){
+    message(paste0("Correcting gear '", header$gear, "' to 'FN'."))
+    header$gear <- "FN"
+  }
+  
   # Return the header list
   return(header)
 }
