@@ -12,6 +12,7 @@ dbdir <- here()
 db <- "MFEdb_20210528.db" # most recent version of the database, stored in the root directory
 funcdir <- here("code") # directory where the code/functions is stored
 isdir <- here("inSeason") # directory where the in-season db files will be stored
+ssdir <- here("sampleSheets_newFormats")
 
 # Run the code below to update fish data with new datasheets that have been entered into the template and saved as .csv files
 
@@ -19,5 +20,5 @@ isdir <- here("inSeason") # directory where the in-season db files will be store
 source(here("code", "fishEntry.R"))
 
 # Run code to update in-season files
-updateFish(headerRows = 18, dbdir = dbdir, db = db, funcdir = funcdir, isdir = isdir)
+updateFish(headerRows = 18, dbdir = dbdir, db = db, funcdir = funcdir, isdir = isdir, ssdir = ssdir)
 
