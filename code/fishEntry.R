@@ -290,23 +290,22 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
       fishDietsLOG <- bind_rows(tochar(fishDietsLOG), tochar(newFD))}
     
     # write updates to files
-    write.csv(fishInfoIS, here("inSeason", "fishInfoIS.csv"), 
+    write.csv(fishInfoIS, here(isdir, "fishInfoIS.csv"), 
               row.names = FALSE)
-    write.csv(fishSamplesIS, here("inSeason", "fishSamplesIS.csv"), 
+    write.csv(fishSamplesIS, here(isdir, "fishSamplesIS.csv"), 
               row.names = FALSE)
     
     if(exists("fishDietsNEW")){
-      write.csv(fishDietsLOG, here("inSeason", "fishDietsLOG.csv"), 
+      write.csv(fishDietsLOG, here(isdir, "fishDietsLOG.csv"), 
                 row.names = FALSE)}
     if(exists("fishOtolithsNEW")){
-      write.csv(fishOtolithsLOG, here("inSeason", "fishOtolithsLOG.csv"), 
+      write.csv(fishOtolithsLOG, here(isdir, "fishOtolithsLOG.csv"), 
                 row.names = FALSE)}
     if(exists("fishSpinesNEW")){
-      write.csv(fishSpinesLOG, here("inSeason", "fishSpinesLOG.csv"), 
+      write.csv(fishSpinesLOG, here(isdir, "fishSpinesLOG.csv"), 
                 row.names = FALSE)}
     if(exists("fishScalesNEW")){
-      write.csv(fishScalesLOG, here("inSeason", "fishScalesLOG.csv"), 
+      write.csv(fishScalesLOG, here(isdir, "fishScalesLOG.csv"), 
                 row.names = FALSE)}
-    
   }
 }
