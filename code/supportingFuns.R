@@ -13,7 +13,8 @@ tochar <- function(df){
   assertDataFrame(df)
   
   df2 <- df %>% 
-    mutate(across(everything(), as.character))
+    suppressWarnings(mutate(across(everything(), 
+                                   as.character)))
   return(df2)
 }
 
