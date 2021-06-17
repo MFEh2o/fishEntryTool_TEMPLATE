@@ -151,11 +151,13 @@ checkForRepeats <- function(colName, new, db, is, na.ok = F, f = NULL){
                   paste0(capture.output(problemRows), collapse = "\n"),
                   "\n\nFor the fish entry tool to work, all of your ", colName, " values must be unique."))
     }else{
-      stop(paste0("You are attempting to add ", colName, " values that are already in either the database or the in-season file:\n\n",
-                  paste0(capture.output(problemRows), collapse = "\n"),
-                  "\n\nIf you are sure you're entering the right values, you can use ", 
-                  deparse(substitute(f)), 
-                  " to bypass this message and enter the values anyway. But BEWARE! Tell the database manager. The database may not compile correctly if it includes repeat values."))
+      if(is.null(f)){
+        stop(paste0("You are attempting to add ", colName, " values that are already in either the database or the in-season file:\n\n",
+                    paste0(capture.output(problemRows), collapse = "\n"),
+                    "\n\nIf you are sure you're entering the right values, you can use ", 
+                    deparse(substitute(f)), 
+                    " to bypass this message and enter the values anyway. But BEWARE! Tell the database manager. The database may not compile correctly if it includes repeat values."))
+      }
     }
   }
 }
@@ -332,21 +334,21 @@ checkFishLengthWeight <- function(new, db, force_fishLength, force_fishWeight){
       
       # Throw error for too long
       if(nrow(tooLong) > 0){
-        if(fl == FALSE){
+        if(force_fishLength == FALSE){
           stop(paste0("Found some fish that are longer than 3 sd above the mean for their species, ", x, ". They are:\n\n",
                       paste0(capture.output(tooLong), collapse = "\n"),
                       "\n\nIf you're sure you want to enter these values, use ",
-                      deparse(substitute(fl)), "."))
+                      deparse(substitute(force_fishLength)), "."))
         }
       }
       
       # Throw error for too short
       if(nrow(tooShort) > 0){
-        if(fl == FALSE){
+        if(force_fishLength == FALSE){
           stop(paste0("Found some fish that are shorter than 3 sd below the mean for their species, ", x, ". They are:\n\n",
                       paste0(capture.output(tooShort), collapse = "\n"),
                       "\n\nIf you're sure you want to enter these values, use ",
-                      deparse(substitute(fl)), "."))
+                      deparse(substitute(force_fishLength)), "."))
         }
       }
     }
@@ -379,21 +381,21 @@ checkFishLengthWeight <- function(new, db, force_fishLength, force_fishWeight){
       
       # Throw error for heavy fish
       if(nrow(tooHeavy) > 0){
-        if(fw == FALSE){
+        if(force_fishWeight == FALSE){
           stop(paste0("You report fishWeight heavier than the prediction based on a length-weight regression from our database for ", x, ". Here are the problematic rows:\n\n",
                       paste0(capture.output(tooHeavy), collapse = "\n"),
                       "\n\nIf you're sure you want to enter these values, use ",
-                      deparse(substitute(fw)), "."))
+                      deparse(substitute(force_fishWeight)), "."))
         }
       }
       
       # Throw error for light fish
       if(nrow(tooLight) > 0){
-        if(fw == FALSE){
+        if(force_fishWeight == FALSE){
           stop(paste0("You report fishWeight lighter than the prediction based on a length-weight regression from our database for ", x, ". Here are the problematic rows:\n\n",
                       paste0(capture.output(tooLight), collapse = "\n"),
                       "\n\nIf you're sure you want to enter these values, use ",
-                      deparse(substitute(fw)), "."))
+                      deparse(substitute(force_fishWeight)), "."))
         }
       }
     }
@@ -549,7 +551,7 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
     }
     if(nrow(rlws) > 0){
       if(fs == F){
-        stop(paste0("You are reporting ", re, " values that have been applied before in this lake, but in a different species:\n\n",
+        stop(paste0("You are reporting tag values that have been applied before in this lake, but in a different species:\n\n",
                     paste0(capture.output(rlws), collapse = "\n"),
                     "\n\nIf you're sure that this is correct, use ",
                     deparse(substitute(fs)), "."))
@@ -557,7 +559,7 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
     }
     if(nrow(rswl) > 0){
       if(fl == F){
-        stop(paste0("You are reporting ", re, " values that have been applied before to this species, but in a different lake:\n\n",
+        stop(paste0("You are reporting tag values that have been applied before to this species, but in a different lake:\n\n",
                     paste0(capture.output(rswl), collapse = "\n"),
                     "\n\nIf you're sure that this is correct, use ",
                     deparse(substitute(fl)), "."))
@@ -565,7 +567,7 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
     }
     if(nrow(wswl) > 0){
       if(fs == F | fl == F){ # both have to be TRUE to let this proceed
-        stop(paste0("You are reporting ", re, " values that have been applied before in a different species and different lake:\n\n",
+        stop(paste0("You are reporting tag values that have been applied before in a different species and different lake:\n\n",
                     paste0(capture.output(wswl), collapse = "\n"),
                     "\n\nIf you're sure this is correct, use both ",
                     deparse(substitute(fs)), " and ",
@@ -598,7 +600,8 @@ checkClipRecapture <- function(new, db, is, f){
     select(lakeID, otu, clipApply)%>%
     bind_rows(is %>%
                 filter(!is.na(clipApply)) %>%
-                mutate(lakeID = word(fishID, 1, 1, sep = "_")) %>%
+                mutate(lakeID = word(fishID, 1, 1, sep = "_"),
+                       across(everything(), as.character)) %>%
                 select(lakeID, otu, clipApply)) %>%
     distinct() %>%
     mutate(combo = paste(lakeID, otu, clipApply, sep = "_"))

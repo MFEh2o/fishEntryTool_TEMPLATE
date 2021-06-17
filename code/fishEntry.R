@@ -258,7 +258,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
                 is = fishInfoIS, f = force_species)
     checkDuplicateFishIDs(new = newFI, is = fishInfoIS, db = fishInfoDB)
     checkFishLengthWeight(db = fishInfoDB, new = newFI,
-                          fl = force_fishLength, fw = force_fishWeight)
+                          force_fishLength = force_fishLength, 
+                          force_fishWeight = force_fishWeight)
     checkForRepeats(colName = "sampleID", new = newFI, db = fishInfoDB, 
                     is = fishInfoIS)
     checkForNew(colName = "clipApply", new = newFI, db = fishInfoDB, 
