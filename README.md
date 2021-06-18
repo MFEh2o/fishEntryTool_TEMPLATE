@@ -64,7 +64,19 @@ Click "Create Project". Your project will get created, and a new session of RStu
 
 1. Add the database file. This should be the most recent version of the database, before adding any data from the current season. Download it from the [MFE Box](https://app.box.com/folder/136303669282). *Note: for clarity and reproducibility, please download the version that includes a date in the file name. So, 'MFEdb_20210423.db', not 'MFEdb.db'.* Put that into the main, top-level 'fishEntryTool_2021' (or whatever you ended up calling it) folder.
 
-2. Add your sample sheets. **[Information about template sample sheets goes here]**
+2. Add your sample sheets. You can/should use one of the template sampleSheets to guide your data entry. The templates can be found in the templates/ folder; there's one for minnow traps and one for other kinds of fishing. Make sure to change the file name to include your lakeID and date. 
+
+**Note about tag column formats**: The paper data sheet has four columns for recording fish tags: `tagApply`, `tagApplyType`, `tagRecapture`, and `tagRecaptureType`. But as of 2021, the database stores tag information in a different format: `pitApply`, `pitRecapture`, `floyApply`, and `floyRecapture`. To make the fish entry tool work more smoothly, and to facilitate entering data for fish with multiple tags, we are making **you** do the work of translating the first format into the second when you enter the data from the paper data sheets into a digital sample sheet (sorry!). 
+
+So, as you might have guessed, any rows where `tagApplyType` was 'pit' should have their `tagApply` values entered into the new `pitApply` column in the template. Same with floy tags. If there were any additional tags recorded on the data sheet (usually in the comments or in the margin), make sure to record those too, wherever they go. For example, if there's a comment along the lines of 'old WI DNR floy tag number XXXX', you would enter the number into `floyRecapture`. Each fish can, theoretically, have four tag numbers entered on a single line (two pit and two floy), although that will pretty much never happen.
+
+If you forget to enter the tags in the new format, the entry tool will throw an error and warn you that you need to change your column formats. I know that's a pain, and I'm sorry for the extra effort. But this is a good step in helping us catch errors before they happen and standardize the workflow for getting data into the database. Fish tags have been a particularly tricky part of the database in the past because there are so many ways for errors to be introduced.
+
+**Note about fish field abbreviations**: The entry tool expects fish species to be recorded as abbreviations, not as full fish names. Use the standard field abbreviations. The tool will accept any abbreviations that show up in the `abbreviation` column of the OTU database table. In addition to the standard abbreviations you're used to, I (KG) have added a couple more as of June 2021, to fill in gaps for species that didn't previously have an abbreviation assigned. They are: <img width="215" alt="Screen Shot 2021-06-18 at 3 28 20 PM" src="https://user-images.githubusercontent.com/37053323/122608218-d2a2b280-d049-11eb-96f2-9db4aab137ff.png">
+
+And here's a full list of the OTU fish abbreviations, in alphabetical order by common name/otu:
+<img width="392" alt="Screen Shot 2021-06-18 at 3 29 53 PM" src="https://user-images.githubusercontent.com/37053323/122608335-0978c880-d04a-11eb-93d7-3f5b50571222.png">
+<img width="391" alt="Screen Shot 2021-06-18 at 3 30 14 PM" src="https://user-images.githubusercontent.com/37053323/122608374-15fd2100-d04a-11eb-821c-dc0313014b28.png">
 
 ## Running the fish entry tool
 
