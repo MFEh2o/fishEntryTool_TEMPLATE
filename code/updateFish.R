@@ -20,5 +20,5 @@ ssdir <- here("sampleSheets_newFormats")
 source(here("code", "fishEntry.R"))
 
 # Run code to update in-season files
-updateFish(headerRows = 18, dbdir = dbdir, db = db, funcdir = funcdir, isdir = isdir, ssdir = ssdir)
-
+updateFish(headerRows = 18, dbdir = dbdir, db = db, funcdir = funcdir, 
+           isdir = isdir, ssdir = ssdir) 
