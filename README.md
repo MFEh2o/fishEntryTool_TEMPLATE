@@ -72,7 +72,9 @@ So, as you might have guessed, any rows where `tagApplyType` was 'pit' should ha
 
 If you forget to enter the tags in the new format, the entry tool will throw an error and warn you that you need to change your column formats. I know that's a pain, and I'm sorry for the extra effort. But this is a good step in helping us catch errors before they happen and standardize the workflow for getting data into the database. Fish tags have been a particularly tricky part of the database in the past because there are so many ways for errors to be introduced.
 
-**Note about fish field abbreviations**: The entry tool expects fish species to be recorded as abbreviations, not as full fish names. Use the standard field abbreviations. The tool will accept any abbreviations that show up in the `abbreviation` column of the OTU database table. In addition to the standard abbreviations you're used to, I (KG) have added a couple more as of June 2021, to fill in gaps for species that didn't previously have an abbreviation assigned. They are: <img width="215" alt="Screen Shot 2021-06-18 at 3 28 20 PM" src="https://user-images.githubusercontent.com/37053323/122608218-d2a2b280-d049-11eb-96f2-9db4aab137ff.png">
+**Note about fish field abbreviations**: The entry tool expects fish species to be recorded as abbreviations, not as full fish names. Use the standard field abbreviations. The tool will accept any abbreviations that show up in the `abbreviation` column of the OTU database table. In addition to the standard abbreviations you're used to, I (KG) have added a couple more as of June 2021, to fill in gaps for species that didn't previously have an abbreviation assigned. They are: 
+
+<img width="215" alt="Screen Shot 2021-06-18 at 3 28 20 PM" src="https://user-images.githubusercontent.com/37053323/122608218-d2a2b280-d049-11eb-96f2-9db4aab137ff.png">
 
 And here's a full list of the OTU fish abbreviations, in alphabetical order by common name/otu:
 <img width="392" alt="Screen Shot 2021-06-18 at 3 29 53 PM" src="https://user-images.githubusercontent.com/37053323/122608335-0978c880-d04a-11eb-93d7-3f5b50571222.png">
