@@ -170,6 +170,8 @@ makeFishInfoNEW <- function(d = curData, h = header, dss = dateSampleString,
                choices = names(h))
   if(!m){
     assertChoice("siteName", choices = names(h))
+    assertSubset(c("pitApply", "pitRecapture", "floyApply", "floyRecapture"),
+                 choices = names(d))
   }
   assertChoice("fishNum", names(d))
   assertCharacter(dss, len = 1)
@@ -183,7 +185,10 @@ makeFishInfoNEW <- function(d = curData, h = header, dss = dateSampleString,
         rename("siteName" = trapNumber) %>%
         mutate(siteName = str_replace(siteName, "MT", "MT."))
     } else{
-      mutate(., siteName = h$siteName)
+      mutate(., 
+             siteName = h$siteName,
+             across(c("pitApply", "pitRecapture", "floyApply", "floyRecapture"), 
+                    as.character))
     }} %>%
     mutate(projectID = h$projectID,
            metadataID = h$metadataID,
