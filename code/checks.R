@@ -470,7 +470,7 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
   assertFlag(fl)
   
   # This is a long check, so give a progress message
-  message("Checking recaptured tags...")
+  message("Checking for recaptured tags...")
   
   # Reformat the data and get only fish with recaptured tags
   newData <- new %>%
@@ -614,7 +614,7 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
       }
     }
   }
-  message("Recaptured tags look good!")
+  message("All set!")
 }
 
 # checkClipRecapture ------------------------------------------------------
