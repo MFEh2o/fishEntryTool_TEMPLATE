@@ -9,7 +9,7 @@ library(here)
 # Set file paths ----------------------------------------------------------
 # File paths are relative paths, written with the here` package
 dbdir <- here()
-db <- "MFEdb_20210528.db" # most recent version of the database, stored in the root directory
+db <- "MFEdb_20210528.db" # name of the database file you're using. Try to use one with a specific date to make the workflow clear. For example, "MFEdb_20200530.db"
 funcdir <- here("code") # directory where the code/functions is stored
 isdir <- here("inSeason") # directory where the in-season db files will be stored
 ssdir <- here("sampleSheets_newFormats")
