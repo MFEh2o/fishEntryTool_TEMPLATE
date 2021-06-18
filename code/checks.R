@@ -69,6 +69,17 @@ checkHeader <- function(h = header, f = file, m = isMinnow){
 
 }
 
+# checkTagColsFormat ------------------------------------------------------
+# As of the 2021 update to the fish entry tool, non-minnowTrap data sheets need to have their tag columns in the format pitApply, pitRecapture, floyApply, floyRecapture. That change has to be made when entering the data from the paper data sheet to the digital data sheet.
+checkTagColsFormat <- function(m = isMinnow, d = curData){
+  if(!m){
+    if(!all(c("pitApply", "pitRecapture", "floyApply", "floyRecapture") %in% 
+            names(d))){
+      stop("As of the 2021 fish entry tool update, non-minnowTrap fish data sheets have to have tag columns 'pitApply', 'pitRecapture', 'floyApply', and 'floyRecapture'. This is different from the 'tagApply'/'tagApplyType'/'tagRecapture'/'tagRecaptureType' format used on the paper data sheets. For more information, see the README file. Please check your data sheet format.")
+    }
+  }
+}
+
 # Checks at the end against the in-season database and full database ----------
 
 # checkForNew -------------------------------------------------------------

@@ -124,6 +124,9 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
                             # minnow traps have a different number of header rows
                             hr = ifelse(isMinnow, headerRows - 1, headerRows))
       
+      # Check tag column format
+      checkTagColsFormat(m = isMinnow, d = curData)
+      
       # Get date and time strings for sampleID's and fishID's
       dateSampleString <- date(header$dateTimeSample) %>% str_remove_all(., "-")
       timeSampleString <- paste0(hour(header$dateTimeSample), minute(header$dateTimeSample))
