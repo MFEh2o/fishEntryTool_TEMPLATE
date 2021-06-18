@@ -178,13 +178,28 @@ makeFishInfoNEW <- function(d = curData, h = header, dss = dateSampleString,
   assertCharacter(tss, len = 1)
   assertCharacter(f, len = 1)
   
+  # If isMinnow, we expect the trapNumbers to be in one of a few formats
+  if(m){
+    d$trapNumber <- as.character(d$trapNumber)
+    assertCharacter(d$trapNumber, 
+                    pattern = "MT\\.[0-9]{0,3}|MT[0-9]{0,3}|[0-9]{0,3}")
+  }
+  
   # Make fishInfoNEW
   fishInfoNEW <- d %>%
     {if(m){
       filter(., otu != "NFC") %>%
         rename("siteName" = trapNumber) %>%
-        mutate(siteName = str_replace(siteName, "MT", "MT."))
-    } else{
+        mutate(siteName = 
+                 case_when(grepl("MT", siteName) & !grepl("\\.", siteName) ~
+                             str_replace(siteName, "MT", "MT."),
+                                    !grepl("MT", siteName) ~ 
+                             paste0("MT.", str_pad(siteName, 
+                                                   side = "left", 
+                                                   pad = "0", 
+                                                   width = 3))
+                           )
+               )}else{
       mutate(., 
              siteName = h$siteName,
              across(c("pitApply", "pitRecapture", "floyApply", "floyRecapture"), 
