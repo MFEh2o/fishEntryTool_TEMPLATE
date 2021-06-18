@@ -244,6 +244,34 @@ checkDateTimes <- function(new){
   if(nrow(problemRowsDateTime) > 0){
     stop("In the following sample sheets, the dateTimeSample is earlier than the dateTimeSet:\n\n", paste0(capture.output(problemRowsDateTime), collapse = "\n"))
   }
+  
+  # Check that dateSet matches the date portion of dateTimeSet
+  probsSet <- new %>%
+    filter(lubridate::ymd(dateSet) != 
+             lubridate::ymd(lubridate::date(dateTimeSet)))
+  if(nrow(probsSet) > 0){
+    stop(paste0("dateSet does not match the date portion of dateTimeSet for these rows:\n\n",
+                paste(capture.output(probsSet), collapse = "\n"),
+                "."))
+  }
+  # Check that dateSample matches the date portion of dateTimeSample
+  probsSample <- new %>%
+    filter(lubridate::ymd(dateSample) != 
+             lubridate::ymd(lubridate::date(dateTimeSample)))
+  if(nrow(probsSample) > 0){
+    stop(paste0("dateSample does not match the date portion of dateTimeSample for these rows:\n\n",
+                paste(capture.output(probsSample), collapse = "\n"),
+                "."))
+  }
+  # Check that the date and time portions of the sampleID combine to create dateTimeSample
+  probsSampleIDDateTime <- new %>%
+    mutate(reconstructed = lubridate::ymd_hm(word(sampleID, 3, 4, sep = "_"))) %>%
+    filter(reconstructed != lubridate::ymd_hms(dateTimeSample))
+  if(nrow(probsSampleIDDateTime) > 0){
+    stop(paste0("dateTimeSample does not match date/time information in the sampleID for these rows:\n\n",
+                paste(capture.output(probsSampleIDDateTime), collapse = "\n"),
+                "."))
+  }
 }
 
 # checkDuplicateFishIDs --------------------------------------------------
