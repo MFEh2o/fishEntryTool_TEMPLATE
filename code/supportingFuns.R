@@ -12,9 +12,7 @@ retiredProjectIDs <- c(1:2, 4:5, 7:12, 14, 16, 18:25, 27:33, 39:40)
 tochar <- function(df){
   assertDataFrame(df)
   
-  df2 <- df %>% 
-    suppressWarnings(mutate(across(everything(), 
-                                   as.character)))
+  suppressWarnings(df2 <- df %>% mutate(across(everything(), as.character)))
   return(df2)
 }
 
@@ -119,7 +117,10 @@ convertSpeciesAbbreviations <- function(x, fn = fishNames, f){
   
   # It's confusing that x$otu contains abbreviations. Let's rename it.
   x <- x %>%
-    rename("abbreviation" = "otu")
+    rename("abbreviation" = "otu") %>%
+    mutate(abbreviation = case_when(abbreviation == "minnow" ~ "MNW",
+                                    TRUE ~ abbreviation)) %>%
+    filter(abbreviation != "NFC") # remove any NFC observations
   
   # Get all abbreviations from fishNames
   abbrsDB <- fn$abbreviation
