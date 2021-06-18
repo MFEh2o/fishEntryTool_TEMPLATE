@@ -15,4 +15,4 @@ dataEnteredBy,,,,,,,,,,
 metadataID,,,,,,,,,,
 useSampleMarkRecap,,,,,,,,,,
 sampleGroup,,,,,,,,,,
-fishNum,species,fishLength,fishWeight,floyApply,floyRecapture,pitApply,pitRecapture,mortality,removed,otolithSample
+fishNum,species,fishLength,fishWeight,pitApply,pitRecapture,floyApply,floyRecapture,mortality,removed,otolithSample
