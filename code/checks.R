@@ -226,6 +226,7 @@ checkDateTimes <- function(new){
   
   # dateSet must be the same or earlier than dateSample
   problemRowsDate <- new %>%
+    select(sampleID, dateSet, dateSample, entryFile) %>%
     filter(lubridate::ymd(dateSample) < lubridate::ymd(dateSet))
   
   # Error message for dateSet/dateSample
@@ -234,7 +235,8 @@ checkDateTimes <- function(new){
   }
   
   # dateTimeSet must be the same or earlier than dateTimeSample
-  problemRowsDateTime <- new %>% # XXX add a check earlier to make sure the dates are in this format.
+  problemRowsDateTime <- new %>% 
+    select(sampleID, dateTimeSet, dateTimeSample, entryFile) %>%
     filter(strptime(dateTimeSample, 
                     format = "%m/%d%Y %H:%M:%S") < 
              strptime(dateTimeSet, 
@@ -247,6 +249,7 @@ checkDateTimes <- function(new){
   
   # Check that dateSet matches the date portion of dateTimeSet
   probsSet <- new %>%
+    select(sampleID, dateSet, dateTimeSet, entryFile) %>%
     filter(lubridate::ymd(dateSet) != 
              lubridate::ymd(lubridate::date(dateTimeSet)))
   if(nrow(probsSet) > 0){
@@ -256,6 +259,7 @@ checkDateTimes <- function(new){
   }
   # Check that dateSample matches the date portion of dateTimeSample
   probsSample <- new %>%
+    select(sampleID, dateSample, dateTimeSample, entryFile) %>%
     filter(lubridate::ymd(dateSample) != 
              lubridate::ymd(lubridate::date(dateTimeSample)))
   if(nrow(probsSample) > 0){
@@ -265,6 +269,7 @@ checkDateTimes <- function(new){
   }
   # Check that the date and time portions of the sampleID combine to create dateTimeSample
   probsSampleIDDateTime <- new %>%
+    select(sampleID, dateTimeSample, entryFile) %>%
     mutate(reconstructed = lubridate::ymd_hm(word(sampleID, 3, 4, sep = "_"))) %>%
     filter(reconstructed != lubridate::ymd_hms(dateTimeSample))
   if(nrow(probsSampleIDDateTime) > 0){
