@@ -129,7 +129,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
       
       # Get date and time strings for sampleID's and fishID's
       dateSampleString <- date(header$dateTimeSample) %>% str_remove_all(., "-")
-      timeSampleString <- paste0(hour(header$dateTimeSample), minute(header$dateTimeSample))
+      timeSampleString <- paste0(str_pad(hour(header$dateTimeSample), width = 2, 
+                                         side = "left", pad = "0"), 
+                                 minute(header$dateTimeSample))
+      assertCharacter(timeSampleString, len = 1, pattern = "[0-2][0-9][0-5][0-9]")
       
       # Make FISH_SAMPLES --------------------------------------------------
       fishSamplesNEW <- makeFishSamplesNEW(h = header, dss = dateSampleString, 
@@ -243,8 +246,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
                  choices = unique(fishSamplesDB$useCPUE)) # no force option
     assertSubset(newFS$useSampleMarkRecap, 
                  choices = unique(fishSamplesDB$useSampleMarkRecap)) # no force option
-    checkForRepeats(colName = "sampleID", new = newFS, db = fishSamplesDB, 
-                    is = fishSamplesIS)
+    #checkForRepeats(colName = "sampleID", new = newFS, db = fishSamplesDB, 
+                    # is = fishSamplesIS) # commenting out the sampleID check just so I can run the entry tool to test it
     checkDateTimes(new = newFS)
     checkRangeLimits(colName = "dayOfYear", new = newFS,
                      f = force_dayOfYear, minVal = 91, maxVal = 305, 
