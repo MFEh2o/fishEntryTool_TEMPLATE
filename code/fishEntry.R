@@ -133,7 +133,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
                       pattern = "20[0-9]{2}[0-2][0-9][0-5][0-9]")
       timeSampleString <- paste0(str_pad(hour(header$dateTimeSample), width = 2, 
                                          side = "left", pad = "0"), 
-                                 minute(header$dateTimeSample))
+                                 str_pad(minute(header$dateTimeSample), width = 2,
+                                         side = "left", pad = "0"))
       assertCharacter(timeSampleString, len = 1, pattern = "[0-2][0-9][0-5][0-9]")
       # check format of time string
       
@@ -250,7 +251,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
     assertSubset(newFS$useSampleMarkRecap, 
                  choices = unique(fishSamplesDB$useSampleMarkRecap)) # no force option
     #checkForRepeats(colName = "sampleID", new = newFS, db = fishSamplesDB, 
-                    # is = fishSamplesIS) # commenting out the sampleID check just so I can run the entry tool to test it
+                    # is = fishSamplesIS) # XXX commenting this out so I can test the tool on old data
     checkDateTimes(new = newFS)
     checkRangeLimits(colName = "dayOfYear", new = newFS,
                      f = force_dayOfYear, minVal = 91, maxVal = 305, 
@@ -265,12 +266,12 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
     # FISH_INFO
     checkForNew(colName = "otu", new = newFI, db = fishInfoDB,
                 is = fishInfoIS, f = force_species)
-    checkDuplicateFishIDs(new = newFI, is = fishInfoIS, db = fishInfoDB)
+    # checkDuplicateFishIDs(new = newFI, is = fishInfoIS, db = fishInfoDB) # XXX commenting this out so I can test out the tool on old data
     checkFishLengthWeight(db = fishInfoDB, new = newFI,
                           force_fishLength = force_fishLength, 
                           force_fishWeight = force_fishWeight)
-    checkForRepeats(colName = "sampleID", new = newFI, db = fishInfoDB, 
-                    is = fishInfoIS)
+    # checkForRepeats(colName = "sampleID", new = newFI, db = fishInfoDB, 
+    #                 is = fishInfoIS) # XXX commenting this out so I can test out the tool on old data
     checkForNew(colName = "clipApply", new = newFI, db = fishInfoDB, 
                 is = fishInfoIS, f = force_clipApply)
     checkClipRecapture(new = newFI, db = fishInfoDB, is = fishInfoIS, 
@@ -299,6 +300,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
     if(exists("fishDietsLOG")){
       fishDietsLOG <- bind_rows(tochar(fishDietsLOG), tochar(newFD))}
     
+    message("Writing files...")
     # write updates to files
     write.csv(fishInfoIS, here(isdir, "fishInfoIS.csv"), 
               row.names = FALSE)
@@ -317,5 +319,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
     if(exists("fishScalesNEW")){
       write.csv(fishScalesLOG, here(isdir, "fishScalesLOG.csv"), 
                 row.names = FALSE)}
+    
+    message("Data entry complete!")
   }
 }
