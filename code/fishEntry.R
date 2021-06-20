@@ -129,10 +129,13 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
       
       # Get date and time strings for sampleID's and fishID's
       dateSampleString <- date(header$dateTimeSample) %>% str_remove_all(., "-")
+      assertCharacter(dateSampleString, len = 1, # check format of date string
+                      pattern = "20[0-9]{2}[0-2][0-9][0-5][0-9]")
       timeSampleString <- paste0(str_pad(hour(header$dateTimeSample), width = 2, 
                                          side = "left", pad = "0"), 
                                  minute(header$dateTimeSample))
       assertCharacter(timeSampleString, len = 1, pattern = "[0-2][0-9][0-5][0-9]")
+      # check format of time string
       
       # Make FISH_SAMPLES --------------------------------------------------
       fishSamplesNEW <- makeFishSamplesNEW(h = header, dss = dateSampleString, 
