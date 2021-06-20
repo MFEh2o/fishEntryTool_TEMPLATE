@@ -52,7 +52,7 @@ checkHeader <- function(h = header, f = file, m = isMinnow){
   
   # If effortUnits == 'angler_hours', then we need crew to be in a certain format.
   if(h$effortUnits == "angler_hours"){
-    if(!grepl("^([A-Za-z]+, )+([A-Za-z]+)$", h$crew)){
+    if(!grepl("^([A-Za-z]+, )+([A-Za-z]+)$|^[A-Za-z]+$", h$crew)){
       stop(paste0("Problem with crew information. You entered:\n", 
                   h$crew,
                   "\nIn order to calculate nAnglers, crew must be either blank or a list of names or initials, upper/lowercase letters only, separated by commas and spaces. Examples: 'chris, stuart, randi', or 'CTS, SEJ, RN', or 'chris, SEJ, Randi', etc. Please correct your crew data and try again."))
