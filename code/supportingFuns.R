@@ -25,6 +25,18 @@ getHeader <- function(d, hr){
   # Pull header
   header <- d[1:(hr-1), 1:2] %>%
     setNames(., c("key", "value")) %>%
+    mutate(key = str_remove_all(key, "\\s"))
+  
+  # Check whether any of the header elements are not named
+  if(any(header$key == "")){
+    w <- which(header$key == "")
+    stop(paste0("The following elements of your header don't have names: ",
+                paste(w, collapse = ", "),
+                ". Make sure each header element has a name, e.g. 'projectID', 'dateTimeSample', etc."))
+  }
+  
+  # assuming the header has all its names, proceed
+  header <- header %>%
     pivot_wider(names_from = key, values_from = value) %>%
     as.list()
   
@@ -38,11 +50,16 @@ getHeader <- function(d, hr){
   assertCharacter(header$dateTimeSample, pattern = pat)
   
   # Apply some formatting and coercion
-  header$projectID <- as.numeric(header$projectID)
-  header$dateTimeSet <- lubridate::mdy_hm(header$dateTimeSet)
-  header$dateTimeSample <- lubridate::mdy_hm(header$dateTimeSample)
-  header$dateSet <- lubridate::date(header$dateTimeSet)
-  header$dateSample <- lubridate::date(header$dateTimeSample)
+  if("projectID" %in% names(header)){
+    header$projectID <- as.numeric(header$projectID)}
+  if("dateTimeSet" %in% names(header)){
+    header$dateTimeSet <- lubridate::mdy_hm(header$dateTimeSet)}
+  if("dateTimeSample" %in% names(header)){
+    header$dateTimeSample <- lubridate::mdy_hm(header$dateTimeSample)}
+  if("dateSet" %in% names(header)){
+    header$dateSet <- lubridate::date(header$dateTimeSet)}
+  if("dateSample" %in% names(header)){
+    header$dateSample <- lubridate::date(header$dateTimeSample)}
   
   header$crew <- str_replace_all(header$crew, ",", ", ") %>%
     str_replace_all(., "\\s\\s", " ")
