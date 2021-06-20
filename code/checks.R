@@ -8,7 +8,7 @@ expectedEffortUnits <- c("angler_hours", "electrofishing_hours",
 checkHeader <- function(h = header, f = file, m = isMinnow){
   # Checks for inputs
   assertList(h, names = "unique")
-  assertSubset(c("comments", "distanceShocked", "gear", "effortUnits", "crew", "dateSet", "dateSample", "dateTimeSet", "dateTimeSample"), choices = names(h))
+  assertSubset(c("comments", "distanceShocked", "gear", "effortUnits", "crew", "dateTimeSet", "dateTimeSample"), choices = names(h))
   
   # Define required fields for electrofishing vs. not, and for minnow traps
   requiredElectro <- h[!names(h) == "comments"]
