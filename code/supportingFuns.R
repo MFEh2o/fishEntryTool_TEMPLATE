@@ -56,10 +56,8 @@ getHeader <- function(d, hr){
     header$dateTimeSet <- lubridate::mdy_hm(header$dateTimeSet)}
   if("dateTimeSample" %in% names(header)){
     header$dateTimeSample <- lubridate::mdy_hm(header$dateTimeSample)}
-  if("dateSet" %in% names(header)){
-    header$dateSet <- lubridate::date(header$dateTimeSet)}
-  if("dateSample" %in% names(header)){
-    header$dateSample <- lubridate::date(header$dateTimeSample)}
+  header$dateSet <- lubridate::date(header$dateTimeSet)
+  header$dateSample <- lubridate::date(header$dateTimeSample)
   
   header$crew <- str_replace_all(header$crew, ",", ", ") %>%
     str_replace_all(., "\\s\\s", " ")
@@ -71,7 +69,7 @@ getHeader <- function(d, hr){
   # Fix some common siteName capitalization errors
   if("siteName" %in% names(header)){
     if(header$siteName %in% c("wholeShoreline", "wholeshoreline", "wholeShore", 
-                         "wholeshore", "WholeShore")){
+                              "wholeshore", "WholeShore")){
       message(paste0("Correcting siteName '", header$siteName, "' to 'WholeShoreline'."))
       header$siteName <- "WholeShoreline"
     }
@@ -106,7 +104,7 @@ getCurData <- function(d, hr){
   
   curData <- curData %>%
     filter(!(is.na(fishLength) & is.na(species)))
-
+  
   # Change name from 'species' to 'otu' if needed
   if("species" %in% names(curData)){
     curData <- curData %>% rename("otu" = species)
@@ -211,18 +209,18 @@ makeFishInfoNEW <- function(d = curData, h = header, dss = dateSampleString,
         mutate(siteName = 
                  case_when(grepl("MT", siteName) & !grepl("\\.", siteName) ~
                              str_replace(siteName, "MT", "MT."),
-                                    !grepl("MT", siteName) ~ 
+                           !grepl("MT", siteName) ~ 
                              paste0("MT.", str_pad(siteName, 
                                                    side = "left", 
                                                    pad = "0", 
                                                    width = 3))
-                           )
-               )}else{
-      mutate(., 
-             siteName = h$siteName,
-             across(c("pitApply", "pitRecapture", "floyApply", "floyRecapture"), 
-                    as.character))
-    }} %>%
+                 )
+        )}else{
+          mutate(., 
+                 siteName = h$siteName,
+                 across(c("pitApply", "pitRecapture", "floyApply", "floyRecapture"), 
+                        as.character))
+        }} %>%
     mutate(projectID = h$projectID,
            metadataID = h$metadataID,
            sampleID = paste(h$lakeID, siteName, dss,
@@ -245,7 +243,7 @@ makeFishSamplesNEW <- function(h = header, dss = dateSampleString,
   assertCharacter(dss, len = 1)
   assertCharacter(tss, len = 1)
   assertCharacter(f, len = 1)
-  assertSubset(c("lakeID", "gear", "metadataID", "dateSample", "projectID", "lakeID", "dataRecorder", "dataEnteredBy", "effortUnits", "crew", "useCPUE"), choices = names(h)) # XXX updateID?
+  assertSubset(c("lakeID", "gear", "metadataID", "projectID", "lakeID", "dataRecorder", "dataEnteredBy", "effortUnits", "crew", "useCPUE"), choices = names(h)) # XXX updateID?
   if(!m){
     assertChoice("siteName", choices = names(h))
   }
@@ -295,15 +293,15 @@ makeFishSamplesNEW <- function(h = header, dss = dateSampleString,
                                   as.character(
                                     length(
                                       unlist(strsplit(crew, split = ", "))
-                                      )
-                                    ),
+                                    )
+                                  ),
                                 TRUE ~ NA_character_)) %>%
     relocate(nAnglers, .after = "effortUnits")
   
   # Remove leading and trailing spaces from useCPUE
   fishSamplesNEW$useCPUE <- stringr::str_remove_all(fishSamplesNEW$useCPUE, "\\s$")
   fishSamplesNEW$useCPUE <- stringr::str_remove_all(fishSamplesNEW$useCPUE, "^\\s")
-
+  
   return(fishSamplesNEW)
 }
 
@@ -336,8 +334,8 @@ makeFishOtolithsNEW <- function(d = curData, h = header,
 
 # makeFishSpinesNEW -----------------------------------------------------
 makeFishSpinesNEW <- function(d = curData, h = header, 
-                                dss = dateSampleString, 
-                                tss = timeSampleString){
+                              dss = dateSampleString, 
+                              tss = timeSampleString){
   # Check inputs
   assertDataFrame(d, col.names = "unique")
   assertList(h)
@@ -388,8 +386,8 @@ makeFishScalesNEW <- function(d = curData, h = header,
 
 # makeFishDietsNEW --------------------------------------------------------
 makeFishDietsNEW <- function(d = curData, h = header, 
-                              dss = dateSampleString, 
-                              tss = timeSampleString){
+                             dss = dateSampleString, 
+                             tss = timeSampleString){
   # Check inputs
   assertDataFrame(d, col.names = "unique")
   assertList(h)
