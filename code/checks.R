@@ -667,7 +667,7 @@ checkClipRecapture <- function(new, db, is, f){
     if(nrow(problemRows) > 0){
       if(f == F){
         stop(paste0("You are reporting clipRecapture values that haven't been previously reported in the same lake and fish species:\n\n",
-                    paste0(capture.output(problemRows), sep = "\n"),
+                    paste0(capture.output(problemRows), collapse = "\n"),
                     "\n\nDouble-check your clip type, species, and lake information. If you're sure you want to report these clipRecapture values, use the force_clipRecapture argument."))
       }
     }
