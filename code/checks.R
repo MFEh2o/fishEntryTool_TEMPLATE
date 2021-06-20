@@ -403,7 +403,7 @@ checkFishLengthWeight <- function(new, db, force_fishLength, force_fishWeight){
     
     # Do a length-weight regression if there are at least 15 fish
     if(nrow(curDB_weight) < 15){
-      warning(paste0("We have <15 observations for weight of species ", x, ", so we won't run an automated length-weight regression. Be sure to double-check the weights you've entered."))
+      warning(paste0("We have <15 observations for weight of species '", x, "', so we won't run an automated length-weight regression. Be sure to double-check the weights you've entered."))
     }else{
       # Length-weight regression for this species (log-transformed)
       curDB_weight$logWeight <- log(curDB_weight$fishWeight)
@@ -619,7 +619,6 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
       }
     }
   }
-  message("All set!")
 }
 
 # checkClipRecapture ------------------------------------------------------
