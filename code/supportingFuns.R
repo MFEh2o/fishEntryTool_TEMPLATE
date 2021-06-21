@@ -50,20 +50,21 @@ getHeader <- function(d, hr){
   assertCharacter(header$dateTimeSample, pattern = pat)
   
   # Apply some formatting and coercion
-  if("projectID" %in% names(header)){
-    header$projectID <- as.numeric(header$projectID)}
-  if("dateTimeSet" %in% names(header)){
-    header$dateTimeSet <- lubridate::mdy_hm(header$dateTimeSet)}
-  if("dateTimeSample" %in% names(header)){
-    header$dateTimeSample <- lubridate::mdy_hm(header$dateTimeSample)}
+  header$projectID <- as.numeric(header$projectID)
+  header$dateTimeSet <- lubridate::mdy_hm(header$dateTimeSet)
+  header$dateTimeSample <- lubridate::mdy_hm(header$dateTimeSample)
+  header$effort <- as.numeric(header$effort)
+  # add dateSet and dateSample
   header$dateSet <- lubridate::date(header$dateTimeSet)
   header$dateSample <- lubridate::date(header$dateTimeSample)
-  
+  # separate crew members with commas and spaces
   header$crew <- str_replace_all(header$crew, ",", ", ") %>%
     str_replace_all(., "\\s\\s", " ")
+  # remove spaces from gear and metadataID
   header$gear <- str_remove_all(header$gear, "\\s")
+  header$metadataID <- str_remove_all(header$metadataID, "\\s")
+  # set distanceShocked to NA if gear is not BE
   header$distanceShocked <- ifelse(header$gear == "BE", header$distanceShocked, NA)
-  header$effort <- as.numeric(header$effort)
 
   # Fix some common siteName capitalization errors
   if("siteName" %in% names(header)){
