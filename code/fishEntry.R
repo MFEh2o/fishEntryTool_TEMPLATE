@@ -95,7 +95,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
     # No files that have not been compiled into the in-season database
     "The in season database is up to date; no new files to compile"
     if(length(otherFiles) > 0){
-      message(paste0("The following sample sheets won't be compiled:\n\n", 
+      warning(paste0("The following sample sheets won't be compiled:\n\n", 
                      paste(otherFiles, collapse = ", "),
                      ". Check that the file names have the correct format."))
     }
@@ -328,7 +328,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
     
     message("Data entry complete!")
     if(length(otherFiles) > 0){
-      message(paste0("The following sample sheets won't be compiled:\n\n", 
+      warning(paste0("The following sample sheets won't be compiled:\n\n", 
                      paste(otherFiles, collapse = ", "),
                      ". Check that the file names have the correct format."))
     }
