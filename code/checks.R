@@ -787,7 +787,7 @@ vonBCheck <- function(new, db, is, f){
   # Separate out any fish that deviate too much from the prediction
   problems <- paired %>%
     filter(abs(vonB_expectedLength - fishLength) > (0.1*fishLength)) %>%
-    select(fishID, tagRecapture, fishLength, lengthApply, vonB_expectedLength, 
+    select(fishID, fishLength, lengthApply, vonB_expectedLength, tagRecapture, 
            otu, otuApply) %>%
     as.data.frame()
   
