@@ -61,11 +61,10 @@ getHeader <- function(d, hr){
   
   header$crew <- str_replace_all(header$crew, ",", ", ") %>%
     str_replace_all(., "\\s\\s", " ")
-  # XXX should enforce a constraint on gear here
+  header$gear <- str_remove_all(header$gear, "\\s")
   header$distanceShocked <- ifelse(header$gear == "BE", header$distanceShocked, NA)
   header$effort <- as.numeric(header$effort)
-  # XXX should also enforce constraints on effort units
-  
+
   # Fix some common siteName capitalization errors
   if("siteName" %in% names(header)){
     if(header$siteName %in% c("wholeShoreline", "wholeshoreline", "wholeShore", 
