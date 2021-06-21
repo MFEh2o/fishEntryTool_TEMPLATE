@@ -175,11 +175,8 @@ convertSpeciesAbbreviations <- function(x, fn = fishNames, f){
                 group_by(abbreviation) %>%
                 slice(1),
               by = "abbreviation") %>%
-    mutate(otu = case_when(is.na(otu) & abbreviation == "RHS" ~ "redhorse",
-                           is.na(otu) & abbreviation == "unidentifiable" ~
-                             "fish_unidentifiable",
-                           is.na(otu) & abbreviation == "PKL" ~ "grass_pickerel",
-                           is.na(otu) & abbreviation == "BFN" ~ "bowfin",
+    # If there's no match (because you've already forced a new species name), just fill in otu with the value in `abbreviation.`
+    mutate(otu = case_when(is.na(otu) ~ abbreviation,
                            TRUE ~ otu)) %>%
     select(-abbreviation)
   j <- nrow(x)
