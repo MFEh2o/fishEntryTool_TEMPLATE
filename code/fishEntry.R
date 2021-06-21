@@ -369,8 +369,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
     # checkTagFormats(new = newFI, fp = force_pitFormat, ff = force_floyFormat) # XXX un-comment this once you've written the regular expression for the pit and floy tag formats (see GH 150)
 
     # Update tables with new entries ------------------------------------------
-    fishInfoIS <- bind_rows(tochar(fishInfoIS), tochar(newFI))
-    fishSamplesIS <- bind_rows(tochar(fishSamplesIS), tochar(newFS))
+    fishInfoIS <- bind_rows(tochar(fishInfoIS), tochar(newFI)) %>%
+      select(c(names(fishInfoDB), "entryFile"))
+    fishSamplesIS <- bind_rows(tochar(fishSamplesIS), tochar(newFS)) %>%
+      select(c(names(fishSamplesDB), "entryFile"))
     if(exists("fishOtolithsLOG")){
       fishOtolithsLOG <- bind_rows(tochar(fishOtolithsLOG), tochar(newFO))}
     if(exists("fishSpinesLOG")){
@@ -379,8 +381,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
       fishScalesLOG <- bind_rows(tochar(fishScalesLOG), tochar(newFC))}
     if(exists("fishDietsLOG")){
       fishDietsLOG <- bind_rows(tochar(fishDietsLOG), tochar(newFD))}
-    # XXX should add a column name check here so no new columns get added. Make sure to include entryFile in addition to the database table column names.
-    
+
     message("Writing files...")
     # write updates to files
     write.csv(fishInfoIS, here(isdir, "fishInfoIS.csv"), 
