@@ -51,8 +51,10 @@ getHeader <- function(d, hr){
   
   # Apply some formatting and coercion
   header$projectID <- as.numeric(header$projectID)
-  header$dateTimeSet <- lubridate::mdy_hm(header$dateTimeSet)
-  header$dateTimeSample <- lubridate::mdy_hm(header$dateTimeSample)
+  header$dateTimeSet <- format(lubridate::mdy_hm(header$dateTimeSet), 
+                               "%Y-%m-%d %H:%M:%S")
+  header$dateTimeSample <- format(lubridate::mdy_hm(header$dateTimeSample),
+                                  "%Y-%m-%d %H:%M:%S")
   header$effort <- as.numeric(header$effort)
   # add dateSet and dateSample
   header$dateSet <- lubridate::date(header$dateTimeSet)
@@ -108,6 +110,11 @@ getCurData <- function(d, hr){
   # Change name from 'species' to 'otu' if needed
   if("species" %in% names(curData)){
     curData <- curData %>% rename("otu" = species)
+  }
+  
+  # Change name from 'clipRecap' to 'clipRecapture' if needed
+  if("clipRecap" %in% names(curData)){
+    curData <- curData %>% rename("clipRecapture" = clipRecap)
   }
   
   # Change "sampled" to "sample" for spine and scale. For some reason, otolith and diet stay as "sampled"
