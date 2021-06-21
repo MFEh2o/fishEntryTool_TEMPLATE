@@ -142,10 +142,19 @@ convertSpeciesAbbreviations <- function(x, fn = fishNames, f){
     rename("abbreviation" = "otu") %>%
     mutate(abbreviation = case_when(abbreviation == "minnow" ~ "MNW",
                                     TRUE ~ abbreviation)) %>%
-    filter(abbreviation != "NFC") # remove any NFC observations
+    filter(abbreviation != "NFC" | is.na(abbreviation)) # remove any NFC observations
   
   # Get all abbreviations from fishNames
   abbrsDB <- fn$abbreviation
+  
+  # Check whether any are NA, and throw an error
+  NAabbr <- x %>% filter(is.na(abbreviation))
+  if(nrow(NAabbr) > 0){
+    stop(paste0("The following fish have no species abbreviation recorded:\n\n",
+                paste(capture.output(NAabbr), collapse = "\n"),
+                "\n\nPlease fill in a species abbreviation for these rows. If the fish could not be identified, use 'fish_unidentifiable'."))
+  }
+  
   
   # Check whether any abbreviations from the data sheet don't show up in OTU (fishNames)
   if(any(!x$abbreviation %in% abbrsDB)){
@@ -211,7 +220,7 @@ makeFishInfoNEW <- function(d = curData, h = header, dss = dateSampleString,
   # Make fishInfoNEW
   fishInfoNEW <- d %>%
     {if(m){
-      filter(., otu != "NFC") %>%
+      filter(., otu != "NFC" | is.na(otu)) %>%
         rename("siteName" = trapNumber) %>%
         mutate(siteName = 
                  case_when(grepl("MT", siteName) & !grepl("\\.", siteName) ~
