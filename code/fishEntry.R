@@ -76,10 +76,11 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
   # Prepare to compile files -----------------------------------------------
   # Check which files have been compiled and which have not in the directory
   message("Finding files to compile...")
-  beenCompiled <- unique(fishInfoIS$entryFile)
+  beenCompiled <- unique(fishSamplesIS$entryFile)
   filenames <- list.files(path = ssdir, 
-                          pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}\\.csv|minnowtrap")
+                          pattern = "[0-9]{4}[[:punct:]][0-9]{2}[[:punct:]][0-9]{2}[[:punct:]][0-9]{4}\\.csv|minnowtrap")
   toCompile <- filenames[!filenames %in% beenCompiled]
+  otherFiles <- filenames[!filenames %in% beenCompiled & !filenames %in% toCompile]
   
   # Initialize data frames to hold the new FISH_INFO and FISH_SAMPLES data
   newFI <- data.frame() # info
@@ -93,6 +94,11 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
   if(length(toCompile) == 0){
     # No files that have not been compiled into the in-season database
     "The in season database is up to date; no new files to compile"
+    if(length(otherFiles) > 0){
+      message(paste0("The following sample sheets won't be compiled:\n\n", 
+                     paste(otherFiles, collapse = ", "),
+                     ". Check that the file names have the correct format."))
+    }
   }else{
     message("Compiling sample sheets")
     # There are files to be compiled; generate rows to append
@@ -321,5 +327,10 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
                 row.names = FALSE)}
     
     message("Data entry complete!")
+    if(length(otherFiles) > 0){
+      message(paste0("The following sample sheets won't be compiled:\n\n", 
+                     paste(otherFiles, collapse = ", "),
+                     ". Check that the file names have the correct format."))
+    }
   }
 }
