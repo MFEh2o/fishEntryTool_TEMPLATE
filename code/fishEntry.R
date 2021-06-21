@@ -2,9 +2,6 @@
 # Originally developed by Stuart E. Jones
 # Last updated by Kaija Gahm, June 2021
 
-# Show full text of errors and warnings
-options(warning.length = 6000L, error.length = 6000L)
-
 # Load packages -----------------------------------------------------------
 library(tidyverse)
 library(here)
@@ -83,8 +80,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
   otherFiles <- filenames[!filenames %in% beenCompiled & !filenames %in% toCompile]
   
   # Initialize data frames to hold the new FISH_INFO and FISH_SAMPLES data
-  newFI <- data.frame() # info
-  newFS <- data.frame() # samples
+  newFI <- fishInfoDB[FALSE, ] # info
+  newFS <- fishSamplesDB[FALSE, ] # samples
   newFO <- data.frame() # otoliths
   newFP <- data.frame() # spines
   newFC <- data.frame() # scales
