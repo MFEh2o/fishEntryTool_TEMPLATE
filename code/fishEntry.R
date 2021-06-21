@@ -116,7 +116,6 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
       message(paste0("Compiling file ", i, ": ", file)) # progress message
       
       # Set a flag to tell us if this is a minnow trap data sheet
-      # XXX maybe put in another check? If someone forgets to put minnowtrap in the file name, the tool will assume it's regular fish sampling. Another telltale sign of minnow traps is the presence of a trapNumber column, so maybe check for that as well. If the file name doesn't have 'minnowtrap' in it, but there is a trapNumber column detected, should throw an error and force them to change the file name.
       isMinnow <- ifelse(grepl("minnowtrap", file), TRUE, FALSE)
       
       # Get file ----------------------------------------------------------
@@ -141,6 +140,11 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
       curData <- getCurData(cur, 
                             # minnow traps have a different number of header rows
                             hr = ifelse(isMinnow, headerRows - 1, headerRows))
+      
+      # Check to be doubly sure that it's not a minnow trap data sheet with the wrong name
+      if(!isMinnow & "trapNumber" %in% names(curData)){
+        stop("This seems to be a minnow trap data sheet (has a `trapNumber` column), but the file name doesn't contain 'minnowtrap'. To process the file correctly, make sure the file name contains 'minnowtrap'.")
+      }
       
       # Check tag column format
       ## For non-minnow-traps, check that the sheet has the new pitApply, pitRecapture, floyApply, floyRecapture format. If not, throw an error and ask for a correction.
