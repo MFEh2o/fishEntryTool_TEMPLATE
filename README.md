@@ -66,7 +66,41 @@ Click "Create Project". Your project will get created, and a new session of RStu
 
 2. Add your sample sheets. You can/should use one of the template sampleSheets to guide your data entry. The templates can be found in the templates/ folder; there's one for minnow traps and one for other kinds of fishing. Make sure to change the file name to include your lakeID and date. 
 
-**Note about tag column formats**: The paper data sheet has four columns for recording fish tags: `tagApply`, `tagApplyType`, `tagRecapture`, and `tagRecaptureType`. But as of 2021, the database stores tag information in a different format: `pitApply`, `pitRecapture`, `floyApply`, and `floyRecapture`. To make the fish entry tool work more smoothly, and to facilitate entering data for fish with multiple tags, we are making **you** do the work of translating the first format into the second when you enter the data from the paper data sheets into a digital sample sheet (sorry!). 
+#### File name format requirements
+
+Your sample sheets must have file names in either of the following formats:
+
+1) For angling (AN), electrofishing (BE), and fyke nets (FN): file name must end with 'YYYY-MM-DD_hhmm.csv'. For example, 'LongLake2020_angling_2020-06-03_1126.csv'. Anything can come before the date and time, but *do not* include the string 'minnowtrap'.
+2) For minnow traps (MT): file name must contain the string 'minnowtrap'. 
+
+#### Required header information
+
+The entry tool expects the following information in the header:
+
+1) For non minnow trap files:
+- projectID (Integer value, see the PROJECTS table. Must not be one of the retired projectID's defined in supportingFuns.R)
+- lakeID (See LAKES table)
+- siteName (See SITES table. Be careful with capitalization. The entry tool will correct the most common capitalization errors--e.g. 'wholeShoreline' and 'deepHole' instead of 'WholeShoreline' and 'DeepHole', but I have not built in robust corrections. If you try to enter an unrecognized site, it will be caught at the end.)
+- dateTimeSet (Expects format 'M or MM/D or DD/YY or YYYY' for the date, and 'h or hh:mm' for the time. For example, '9/3/21 7:30', '09/3/21 07:30', '09/03/2021 07:30', etc. would all be valid formats. I'm not going to write out all the possible combinations, but you get the idea. Regex is '"^[0-9]{1,2}\\/[0-9]{1,2}\\/[0-9]{2,4}\\s[0-9]{1,2}:[0-9]{2}$"')
+- dateTimeSample (same format as dateTimeSet, see previous)
+- crew (One or more sets of names or initials, any combination of capital or lowercase letters, separated by commas and spaces. For example, 'chris, stuart, randi', or 'CTS, SEJ, RN', or 'chris, SEJ, Randi')
+- gear (A value that has previously been used in the database. AN, FN, BE, or MT)
+- distanceShocked (A numeric value between 0 and 25)
+- effort (A numeric value between 0 and 24)
+- effortUnits (A value that has previously been used in the database, such as 'angler_hours', 'hours', 'trap_hours', etc.)
+- comments (No specific format requirements)
+- useCPUE ('yes', 'no', or NA)
+- dataRecorder (No specific format requirements)
+- dataEnteredBy (No specific format requirements)
+metadataID (A metadata value previously used in the database, or a new one if you force it. **Caution here!** It's really easy to misspell metadataID's: punctuation, capitalization, getting the date wrong... double-check your metadataID's! And if the entry tool throws an error and gives you the opportunity to force a new metadataID, please please please double-check that you actually intended to enter a new metadataID and didn't just make a typo. )
+- useSampleMarkRecap ('yes', 'no', or NA)
+sampleGroup (A value previously in the database, such as 'EL2016_markrecap_fall' or 'angling' or '2020_JonesLake_Experiment')
+
+![image](https://user-images.githubusercontent.com/37053323/122841198-ab5a1880-d2c9-11eb-9bb0-49673936c985.png)
+
+#### Tag column formats
+
+The paper data sheet has four columns for recording fish tags: `tagApply`, `tagApplyType`, `tagRecapture`, and `tagRecaptureType`. But as of 2021, the database stores tag information in a different format: `pitApply`, `pitRecapture`, `floyApply`, and `floyRecapture`. To make the fish entry tool work more smoothly, and to facilitate entering data for fish with multiple tags, we are making **you** do the work of translating the first format into the second when you enter the data from the paper data sheets into a digital sample sheet (sorry!). 
 
 So, as you might have guessed, any rows where `tagApplyType` was 'pit' should have their `tagApply` values entered into the new `pitApply` column in the template. Same with floy tags. If there were any additional tags recorded on the data sheet (usually in the comments or in the margin), make sure to record those too, wherever they go. For example, if there's a comment along the lines of 'old WI DNR floy tag number XXXX', you would enter the number into `floyRecapture`. Each fish can, theoretically, have four tag numbers entered on a single line (two pit and two floy), although that will pretty much never happen.
 
