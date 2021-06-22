@@ -82,11 +82,12 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
   # Expected file name formats
   ## Regular fishing (AN, FN, BE, aka *not* minnow traps): *YYYY-MM-DD_hhmm.csv, where * can be anything (doesn't matter what comes before the date and time), Y, M, D, h, and m are all digits between 0 and 9, and the - and _ can actually be any punctuation mark (because there was some variability in how the file names were written).
   ## Minnow traps: must contain 'minnowtrap'.
+  allFiles <- list.files(path = ssdir)
   filenames <- list.files(path = ssdir, 
-                          pattern = "[0-9]{4}[[:punct:]][0-9]{2}[[:punct:]][0-9]{2}[[:punct:]][0-9]{4}\\.csv|minnowtrap")
+                          pattern = "[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{4}\\.csv|minnowtrap")
   toCompile <- filenames[!filenames %in% beenCompiled] # files that haven't yet been compiled
   # If any file names don't match the above patterns, the tool will warn you, because otherwise they would just silently remain unprocessed.
-  otherFiles <- filenames[!filenames %in% beenCompiled & !filenames %in% toCompile]
+  otherFiles <- allFiles[!allFiles %in% beenCompiled & !allFiles %in% toCompile]
   
   # Initialize data frames to hold the new FISH_INFO and FISH_SAMPLES data
   ## We initialize FISH_INFO and FISH_SAMPLES from the database tables so they'll have the same column names. That saves us from having to manually set a bunch of lesser-used columns to NA. Because I use `bind_rows()` later on in the tool instead of `rbind()`, the new data that we append doesn't have to have all of the same columns as the database tables. Any columns it doesn't have will just be filled in with NA.
