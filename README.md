@@ -77,26 +77,27 @@ Your sample sheets must have file names in either of the following formats:
 
 The entry tool expects the following information in the header:
 
-1) For non minnow trap files:
-- projectID (Integer value, see the PROJECTS table. Must not be one of the retired projectID's defined in supportingFuns.R)
-- lakeID (See LAKES table)
-- siteName (See SITES table. Be careful with capitalization. The entry tool will correct the most common capitalization errors--e.g. 'wholeShoreline' and 'deepHole' instead of 'WholeShoreline' and 'DeepHole', but I have not built in robust corrections. If you try to enter an unrecognized site, it will be caught at the end.)
-- dateTimeSet (Expects format 'M or MM/D or DD/YY or YYYY' for the date, and 'h or hh:mm' for the time. For example, '9/3/21 7:30', '09/3/21 07:30', '09/03/2021 07:30', etc. would all be valid formats. I'm not going to write out all the possible combinations, but you get the idea. Regex is '"^[0-9]{1,2}\\/[0-9]{1,2}\\/[0-9]{2,4}\\s[0-9]{1,2}:[0-9]{2}$"')
-- dateTimeSample (same format as dateTimeSet, see previous)
-- crew (One or more sets of names or initials, any combination of capital or lowercase letters, separated by commas and spaces. For example, 'chris, stuart, randi', or 'CTS, SEJ, RN', or 'chris, SEJ, Randi')
-- gear (A value that has previously been used in the database. AN, FN, BE, or MT)
-- distanceShocked (A numeric value between 0 and 25)
-- effort (A numeric value between 0 and 24)
-- effortUnits (A value that has previously been used in the database, such as 'angler_hours', 'hours', 'trap_hours', etc.)
-- comments (No specific format requirements)
-- useCPUE ('yes', 'no', or NA)
-- dataRecorder (No specific format requirements)
-- dataEnteredBy (No specific format requirements)
-metadataID (A metadata value previously used in the database, or a new one if you force it. **Caution here!** It's really easy to misspell metadataID's: punctuation, capitalization, getting the date wrong... double-check your metadataID's! And if the entry tool throws an error and gives you the opportunity to force a new metadataID, please please please double-check that you actually intended to enter a new metadataID and didn't just make a typo. )
-- useSampleMarkRecap ('yes', 'no', or NA)
+1) For non-minnowtrap files:
+- **projectID** (Integer value, see the PROJECTS table. Must not be one of the retired projectID's defined in supportingFuns.R)
+- **lakeID** (See LAKES table)
+- **siteName** (See SITES table. Be careful with capitalization. The entry tool will correct the most common capitalization errors--e.g. 'wholeShoreline' and 'deepHole' instead of 'WholeShoreline' and 'DeepHole', but I have not built in robust corrections. If you try to enter an unrecognized site, it will be caught at the end.)
+- **dateTimeSet** (Expects format 'M or MM/D or DD/YY or YYYY' for the date, and 'h or hh:mm' for the time. For example, '9/3/21 7:30', '09/3/21 07:30', '09/03/2021 07:30', etc. would all be valid formats. I'm not going to write out all the possible combinations, but you get the idea. Regex is '"^[0-9]{1,2}\\/[0-9]{1,2}\\/[0-9]{2,4}\\s[0-9]{1,2}:[0-9]{2}$"')
+- **dateTimeSample** (same format as dateTimeSet, see previous)
+- **crew** (One or more sets of names or initials, any combination of capital or lowercase letters, separated by commas and spaces. For example, 'chris, stuart, randi', or 'CTS, SEJ, RN', or 'chris, SEJ, Randi')
+- **gear** (A value that has previously been used in the database. AN, FN, BE, or MT)
+- **distanceShocked** (A numeric value between 0 and 25, or NA for non-electrofishing)
+- **effort** (A numeric value between 0 and 24)
+- **effortUnits** (A value that has previously been used in the database, such as 'angler_hours', 'hours', 'trap_hours', etc.)
+- **comments** (No specific format requirements)
+- **useCPUE** ('yes', 'no', or NA)
+- **dataRecorder** (No specific format requirements)
+- **dataEnteredBy** (No specific format requirements)
+- **metadataID** (A metadata value previously used in the database, or a new one if you force it. **Caution here!** It's really easy to misspell metadataID's: punctuation, capitalization, getting the date wrong... double-check your metadataID's! And if the entry tool throws an error and gives you the opportunity to force a new metadataID, please please please double-check that you actually intended to enter a new metadataID and didn't just make a typo. )
+- **useSampleMarkRecap** ('yes', 'no', or NA)
 sampleGroup (A value previously in the database, such as 'EL2016_markrecap_fall' or 'angling' or '2020_JonesLake_Experiment')
 
-![image](https://user-images.githubusercontent.com/37053323/122841198-ab5a1880-d2c9-11eb-9bb0-49673936c985.png)
+2) For minnowtrap files:
+Same requirements, but omit **siteName**--each `trapNumber` will combine with the `lakeID` to make its own `siteName`. Just leave **distanceShocked** as NA.
 
 #### Tag column formats
 
@@ -106,7 +107,11 @@ So, as you might have guessed, any rows where `tagApplyType` was 'pit' should ha
 
 If you forget to enter the tags in the new format, the entry tool will throw an error and warn you that you need to change your column formats. I know that's a pain, and I'm sorry for the extra effort. But this is a good step in helping us catch errors before they happen and standardize the workflow for getting data into the database. Fish tags have been a particularly tricky part of the database in the past because there are so many ways for errors to be introduced.
 
-**Note about fish field abbreviations**: The entry tool expects fish species to be recorded as abbreviations, not as full fish names. Use the standard field abbreviations. The tool will accept any abbreviations that show up in the `abbreviation` column of the OTU database table. In addition to the standard abbreviations you're used to, I (KG) have added a couple more as of June 2021, to fill in gaps for species that didn't previously have an abbreviation assigned. They are: 
+If you know that there was a tag but you couldn't read the number, enter 'unknown', for any of the tag columns.
+
+#### Fish species abbreviations
+
+The entry tool expects fish species to be recorded as abbreviations, not as full fish names. Use the standard field abbreviations. The tool will accept any abbreviations that show up in the `abbreviation` column of the OTU database table. In addition to the standard abbreviations you're used to, I (KG) have added a couple more as of June 2021, to fill in gaps for species that didn't previously have an abbreviation assigned. They are: 
 
 <img width="215" alt="Screen Shot 2021-06-18 at 3 28 20 PM" src="https://user-images.githubusercontent.com/37053323/122608218-d2a2b280-d049-11eb-96f2-9db4aab137ff.png">
 
@@ -129,6 +134,10 @@ db <- "MFEdb_20200530.db" # name of the database file you're using. Try to use o
 ```
 
 2. Run the script! Pay attention to warnings and errors that come up in the console. If you get errors related to e.g. trying to add a new lake or site that isn't already in the database, you can re-run the script after adding parameters like `force_lakeID = T` or `force_siteID = T` to the `updateFish()` function call. **If you use any force_* parameters, be sure to note them manually in the 'force log' that will be created for each year the tool is used.** The database manager will be able to look back at this force log and correct any errors after the fact.
+
+### A note on file paths
+
+The file paths in updateFish.R are defined using the `here()` package for simplicity. All file paths are relative to the project root directory, aka the top-level folder where the '.Rproj' file lives. Instead of writing file paths with slashes, we write them separated by commas. For example, instead of `"code/checks.R"`, we write `here("code", "checks.R")`. Behind the scenes, that evaluates to a full file path that's specific to whatever computer you're on and where you've stored your project. For more information on the `here` package, see [this article](https://github.com/jennybc/here_here).
 
 ## Saving your changes to GitHub
 
