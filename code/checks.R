@@ -15,6 +15,11 @@ checkHeader <- function(h = header, f = file, m = isMinnow){
   requiredNonElectro <- h[!names(h) %in% c("comments", "distanceShocked")]
   requiredMinnow <- h[!names(h) %in% c("comments", "distanceShocked", "siteName")]
   
+  # Check that the 'gear' field has a value
+  if(is.na(h$gear)|h$gear == ""){
+    stop("The 'gear' field of the header is empty or NA. Please enter a gear type.")
+  }
+  
   # Check that all required fields are present (different requirements for electrofishing vs. not)
   # Here, we define missing as either blank ("") or NA (is.na())
   if(h$gear == "BE"){
