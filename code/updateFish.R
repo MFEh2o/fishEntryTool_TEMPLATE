@@ -30,7 +30,6 @@ updateFish(headerRows = 18,
            db = db, 
            funcdir = funcdir, 
            isdir = isdir, 
-           ssdir = ssdir
-           # add any force_* arguments here
-           ) 
+           ssdir = ssdir)
+# add any force_* arguments in the console
 
