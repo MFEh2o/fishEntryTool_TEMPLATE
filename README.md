@@ -94,7 +94,25 @@ So, to be clear, when you're done that line should look like this (with the name
 db <- "MFEdb_20200530.db" # name of the database file you're using. Try to use one with a specific date to make the workflow clear. For example, "MFEdb_20200530.db"
 ```
 
-2. Run the script! Pay attention to warnings and errors that come up in the console. If you get errors related to e.g. trying to add a new lake or site that isn't already in the database, you can re-run the script after adding parameters like `force_lakeID = T` or `force_siteID = T` to the `updateFish()` function call. **If you use any force_* parameters, be sure to note them manually in the 'force log' that will be created for each year the tool is used.** The database manager will be able to look back at this force log and correct any errors after the fact.
+2. Run the script! Pay attention to warnings and errors that come up in the console. 
+
+3. If you get errors related to e.g. trying to add a new lake or site that isn't already in the database, make sure to double-check the error messages. They will flag which data is problematic and which data sheet(s) it came from. You should take a look and figure out whether there's missing information you need to fill in, or whether the information is actually correct and you just need to 'force' it past the tool's flags. If you need to force, here's how:
+
+First, check the error message to determine which `force_*` argument to use. Then, **in the console** (not in the script), press the up arrow key to retrieve the last command you ran, which should be the `updateLimno()` function. Add the relevant `force_*` parameter to the function call in the console, setting its value to `TRUE` or `T`. For example, if the error you got was about trying to add a new siteID, you'd do this: 
+
+```
+# Run the tool ------------------------------------------------------------
+updateLimno(dbdir = dbdir, 
+            db = db, 
+            sampleSheetsDir = sampleSheetsDir, 
+            logFilesDir = logFilesDir, 
+            funcdir = funcdir,
+            labelsDir = labelsDir,
+            force_siteID = T)
+```
+**IMPORTANT:** Make sure you're doing all of this in the console, not actually modifying the 'updatingLogs.R' script! If you modify the script and the commit and push those changes to GitHub, the `force_*` arguments you added for one day's data sheets will be saved for the next day, and you might end up missing real errors by accidentally forcing them through.
+
+Finally, each time you use a `force_*` argument in the console, you need to **fill out a new line in the force log**. This is a manual log to keep track of what information has been forced while entering data sheets, so that the database manager can go through and make any corrections needed at the end of the field season. You'll want to include **the data sheet** that caused an error, **the force_* argument** that you used, and **a brief comment** about why you forced the data. Was it a legitimate new lake/site/etc? Was the data actually wrong and needs to be fixed later? Was information missing that shouldn't have been? Just describe a little bit.
 
 ## Saving your changes to GitHub
 
