@@ -727,7 +727,7 @@ vonB <- function(df){
   # Compute age and growth time
   df <- df %>%
     mutate(growthTime = as.numeric(dateRecap - dateApply)/365, # convert from days to years, since t0 has units of years
-           age1 = log(1 - c(fishLength/Linf))/-K + t0,
+           age1 = log(1 - (fishLength/Linf))/-K + t0,
            age2 = as.numeric(age1 + growthTime),
            vonB_expectedLength = Linf*(1-exp(-K*(age2-t0)))) %>%
     select(-c("dateApply", "dateRecap", "growthTime", "age1", "age2"))
@@ -749,7 +749,7 @@ vonBCheck <- function(new, db, is, f){
                choices = names(is))
   assertFlag(f)
   
-  recaptured <- new %>% # XXX go back to the other functions and add the entryFile column
+  recaptured <- new %>% 
     select(fishID, otu, fishLength, "pit" = pitRecapture, "floy" = floyRecapture, entryFile) %>%
     pivot_longer(cols = c("pit", "floy"), names_to = "tagRecaptureType", 
                  values_to = "tagRecapture") %>%
