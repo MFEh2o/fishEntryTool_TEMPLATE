@@ -7,7 +7,7 @@ library(tidyverse)
 library(here)
 
 # Show long errors and warnings
-options(warning.length = 10000L, error.length = 10000L)
+options(warning.length = 6000L, error.length = 6000L)
 
 # Set file paths ----------------------------------------------------------
 # File paths are relative paths, written with the here` package
