@@ -66,13 +66,52 @@ Click "Create Project". Your project will get created, and a new session of RStu
 
 2. Add your sample sheets. You can/should use one of the template sampleSheets to guide your data entry. The templates can be found in the templates/ folder; there's one for minnow traps and one for other kinds of fishing. Make sure to change the file name to include your lakeID and date. 
 
-**Note about tag column formats**: The paper data sheet has four columns for recording fish tags: `tagApply`, `tagApplyType`, `tagRecapture`, and `tagRecaptureType`. But as of 2021, the database stores tag information in a different format: `pitApply`, `pitRecapture`, `floyApply`, and `floyRecapture`. To make the fish entry tool work more smoothly, and to facilitate entering data for fish with multiple tags, we are making **you** do the work of translating the first format into the second when you enter the data from the paper data sheets into a digital sample sheet (sorry!). 
+#### File name format requirements
+
+Your sample sheets must have file names in either of the following formats:
+
+1) For angling (AN), electrofishing (BE), and fyke nets (FN): file name must end with 'YYYY-MM-DD_hhmm.csv'. For example, 'LongLake2020_angling_2020-06-03_1126.csv'. Anything can come before the date and time, but *do not* include the string 'minnowtrap'.
+2) For minnow traps (MT): file name must contain the string 'minnowtrap'. 
+
+#### Required header information
+
+The entry tool expects the following information in the header:
+
+1) For non-minnowtrap files:
+- **projectID** (Integer value, see the PROJECTS table. Must not be one of the retired projectID's defined in supportingFuns.R)
+- **lakeID** (See LAKES table)
+- **siteName** (See SITES table. Be careful with capitalization. The entry tool will correct the most common capitalization errors--e.g. 'wholeShoreline' and 'deepHole' instead of 'WholeShoreline' and 'DeepHole', but I have not built in robust corrections. If you try to enter an unrecognized site, it will be caught at the end.)
+- **dateTimeSet** (Expects format 'M or MM/D or DD/YY or YYYY' for the date, and 'h or hh:mm' for the time. For example, '9/3/21 7:30', '09/3/21 07:30', '09/03/2021 07:30', etc. would all be valid formats. I'm not going to write out all the possible combinations, but you get the idea. Regex is '"^[0-9]{1,2}\\/[0-9]{1,2}\\/[0-9]{2,4}\\s[0-9]{1,2}:[0-9]{2}$"')
+- **dateTimeSample** (same format as dateTimeSet, see previous)
+- **crew** (One or more sets of names or initials, any combination of capital or lowercase letters, separated by commas and spaces. For example, 'chris, stuart, randi', or 'CTS, SEJ, RN', or 'chris, SEJ, Randi')
+- **gear** (A value that has previously been used in the database. AN, FN, BE, or MT)
+- **distanceShocked** (A numeric value between 0 and 25, or NA for non-electrofishing)
+- **effort** (A numeric value between 0 and 24)
+- **effortUnits** (A value that has previously been used in the database, such as 'angler_hours', 'hours', 'trap_hours', etc.)
+- **comments** (No specific format requirements)
+- **useCPUE** ('yes', 'no', or NA)
+- **dataRecorder** (No specific format requirements)
+- **dataEnteredBy** (No specific format requirements)
+- **metadataID** (A metadata value previously used in the database, or a new one if you force it. **Caution here!** It's really easy to misspell metadataID's: punctuation, capitalization, getting the date wrong... double-check your metadataID's! And if the entry tool throws an error and gives you the opportunity to force a new metadataID, please please please double-check that you actually intended to enter a new metadataID and didn't just make a typo. )
+- **useSampleMarkRecap** ('yes', 'no', or NA)
+sampleGroup (A value previously in the database, such as 'EL2016_markrecap_fall' or 'angling' or '2020_JonesLake_Experiment')
+
+2) For minnowtrap files:
+Same requirements, but omit **siteName**--each `trapNumber` will combine with the `lakeID` to make its own `siteName`. Just leave **distanceShocked** as NA.
+
+#### Tag column formats
+
+The paper data sheet has four columns for recording fish tags: `tagApply`, `tagApplyType`, `tagRecapture`, and `tagRecaptureType`. But as of 2021, the database stores tag information in a different format: `pitApply`, `pitRecapture`, `floyApply`, and `floyRecapture`. To make the fish entry tool work more smoothly, and to facilitate entering data for fish with multiple tags, we are making **you** do the work of translating the first format into the second when you enter the data from the paper data sheets into a digital sample sheet (sorry!). 
 
 So, as you might have guessed, any rows where `tagApplyType` was 'pit' should have their `tagApply` values entered into the new `pitApply` column in the template. Same with floy tags. If there were any additional tags recorded on the data sheet (usually in the comments or in the margin), make sure to record those too, wherever they go. For example, if there's a comment along the lines of 'old WI DNR floy tag number XXXX', you would enter the number into `floyRecapture`. Each fish can, theoretically, have four tag numbers entered on a single line (two pit and two floy), although that will pretty much never happen.
 
 If you forget to enter the tags in the new format, the entry tool will throw an error and warn you that you need to change your column formats. I know that's a pain, and I'm sorry for the extra effort. But this is a good step in helping us catch errors before they happen and standardize the workflow for getting data into the database. Fish tags have been a particularly tricky part of the database in the past because there are so many ways for errors to be introduced.
 
-**Note about fish field abbreviations**: The entry tool expects fish species to be recorded as abbreviations, not as full fish names. Use the standard field abbreviations. The tool will accept any abbreviations that show up in the `abbreviation` column of the OTU database table. In addition to the standard abbreviations you're used to, I (KG) have added a couple more as of June 2021, to fill in gaps for species that didn't previously have an abbreviation assigned. They are: 
+If you know that there was a tag but you couldn't read the number, enter 'unknown', for any of the tag columns.
+
+#### Fish species abbreviations
+
+The entry tool expects fish species to be recorded as abbreviations, not as full fish names. Use the standard field abbreviations. The tool will accept any abbreviations that show up in the `abbreviation` column of the OTU database table. In addition to the standard abbreviations you're used to, I (KG) have added a couple more as of June 2021, to fill in gaps for species that didn't previously have an abbreviation assigned. They are: 
 
 <img width="215" alt="Screen Shot 2021-06-18 at 3 28 20 PM" src="https://user-images.githubusercontent.com/37053323/122608218-d2a2b280-d049-11eb-96f2-9db4aab137ff.png">
 
@@ -113,6 +152,10 @@ updateLimno(dbdir = dbdir,
 **IMPORTANT:** Make sure you're doing all of this in the console, not actually modifying the 'updatingLogs.R' script! If you modify the script and the commit and push those changes to GitHub, the `force_*` arguments you added for one day's data sheets will be saved for the next day, and you might end up missing real errors by accidentally forcing them through.
 
 Finally, each time you use a `force_*` argument in the console, you need to **fill out a new line in the force log**. This is a manual log to keep track of what information has been forced while entering data sheets, so that the database manager can go through and make any corrections needed at the end of the field season. You'll want to include **the data sheet** that caused an error, **the force_* argument** that you used, and **a brief comment** about why you forced the data. Was it a legitimate new lake/site/etc? Was the data actually wrong and needs to be fixed later? Was information missing that shouldn't have been? Just describe a little bit.
+
+### A note on file paths
+
+The file paths in updateFish.R are defined using the `here()` package for simplicity. All file paths are relative to the project root directory, aka the top-level folder where the '.Rproj' file lives. Instead of writing file paths with slashes, we write them separated by commas. For example, instead of `"code/checks.R"`, we write `here("code", "checks.R")`. Behind the scenes, that evaluates to a full file path that's specific to whatever computer you're on and where you've stored your project. For more information on the `here` package, see [this article](https://github.com/jennybc/here_here).
 
 ## Saving your changes to GitHub
 
