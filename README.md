@@ -66,6 +66,8 @@ Click "Create Project". Your project will get created, and a new session of RStu
 
 2. Add your sample sheets. You can/should use one of the template sampleSheets to guide your data entry. The templates can be found in the templates/ folder; there's one for minnow traps and one for other kinds of fishing. Make sure to change the file name to include your lakeID and date. 
 
+Sometimes, you'll need to include columns that aren't shown in the template. The FISH_INFO table has a huge number of columns. As long as you're adding a column that already exists in FISH_INFO, everything should be fine. We just don't put all the (mostly blank, project-specific) columns into the template files, for simplicity.
+
 #### File name format requirements
 
 Your sample sheets must have file names in either of the following formats:
