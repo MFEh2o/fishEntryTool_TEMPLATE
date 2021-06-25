@@ -291,7 +291,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
     checkForNew(colName = "projectID", new = newFS, db = fishSamplesDB, 
                 is = fishSamplesIS, f = force_newProjectID)
     
-    ## any projectID's that were supposed to be retired (not used anymore)? (see supportingFuns.R for a list of retired projectID's)
+    ## any projectID's that were supposed to be retired (not used anymore)? 
+    ## (see supportingFuns.R for a list of retired projectID's)
     retiredProjectIDsCheck(new = newFS, f = force_retiredProjectID)
     
     ## Controlled vocabulary for useCPUE (no force allowed)
@@ -303,8 +304,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
                  choices = unique(fishSamplesDB$useSampleMarkRecap))
     
     ## Check for repeat sampleID's in FISH_SAMPLES
-    #checkForRepeats(colName = "sampleID", new = newFS, db = fishSamplesDB, 
-                    # is = fishSamplesIS) # XXX commenting this out so I can test the tool on old data
+    checkForRepeats(colName = "sampleID", new = newFS, db = fishSamplesDB, 
+                    is = fishSamplesIS)
     
     ## Check that set/sample dates and times make sense
     checkDateTimes(new = newFS)
@@ -330,7 +331,7 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
                 is = fishInfoIS, f = force_species)
     
     ## any duplicate fishID's?
-    # checkDuplicateFishIDs(new = newFI, is = fishInfoIS, db = fishInfoDB) # XXX commenting this out so I can test out the tool on old data
+    checkDuplicateFishIDs(new = newFI, is = fishInfoIS, db = fishInfoDB)
     
     ## check absolute bounds for length and weight, and run a length-weight regression where possible. Are length/weight values reasonable for the species?
     checkFishLengthWeight(db = fishInfoDB, new = newFI,
@@ -338,8 +339,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
                           force_fishWeight = force_fishWeight)
     
     ## any repeated sampleID's in FISH_INFO?
-    # checkForRepeats(colName = "sampleID", new = newFI, db = fishInfoDB, 
-    #                 is = fishInfoIS) # XXX commenting this out so I can test out the tool on old data
+    checkForRepeats(colName = "sampleID", new = newFI, db = fishInfoDB, 
+                    is = fishInfoIS)
     
     ## any new clipApply codes?
     checkForNew(colName = "clipApply", new = newFI, db = fishInfoDB, 
@@ -363,8 +364,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
                     is = fishInfoIS, na.ok = T, f = force_floyApply)
     
     ## where possible, compute growth curves for tagged fish that have been previously recaptured, and see if their weight makes sense.
-    # XXX I think there's something wrong with this check--it's flagging way more fish than I would expect.
-    vonBCheck(new = newFI, db = fishInfoDB, is = fishInfoIS, f = force_vonB)
+    # XXX Something is wrong with this check. Need to re-fit the vonB curves with the age data from FISH_OTOLITHS.
+    #vonBCheck(new = newFI, db = fishInfoDB, is = fishInfoIS, f = force_vonB)
     
     ## have these fish species been reported in these lakes before?
     checkLakeSpecies(new = newFI, db = fishInfoDB, is = fishInfoIS, 
