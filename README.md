@@ -206,6 +206,20 @@ Finally, you can "Push" your changes to GitHub by clicking the green "Push" arro
 
 It might seem a little redundant to commit and then immediately push. Typically, you can make a bunch of commits before pushing, but that's more relevant when you're actively developing a piece of software. When you use the entry tool, you're more likely to run it each time with minimal changes, generating new output files and modifying log files each time, so it makes sense to push each time you commit. But it's not critical--if you forget to push, you can just commit the next day's datasheets and then push then. No worries.
 
+#### Troubleshooting the push
+When you push your changes, you may run into this message:
+```
+Error: repository not found
+```
+
+This is weird and confusing! Assuming you followed the setup instructions above for cloning the repository from the template, there's no reason the repository shouldn't exist.
+
+What this typically means, actually, is that the user whose email is associated with the git version running on your computer doesn't have permission to access the repository. ([This page, for instance, notes that this error can indicate an access problem, as well as the possibility that the repo doesn't exist](https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/cloning-a-repository-from-github/error-repository-not-found)).
+
+To fix this, you need to go to the repository page on GitHub and grant Admin access to the user whose computer you're working on. For example, when I (KG) encountered this error using the UNDERC lab computer (working with CM), I realized that the lab computer was logged in as 'joneslabnd', so I had to grant Stuart ([joneslabND](https://github.com/orgs/MFEh2o/people/joneslabND)) Admin access. Then the push worked correctly.
+
+To grant admin access, go to repository main page on GitHub (if you're reading this README on GitHub, you're probably already there). In the top right, click Settings (gear icon), and then choose 'Manage access' from the menu on the left. On this page, you should be able to add Stuart (or yourself, or whoever's computer it is) as an Admin on the repository. Refresh the GitHub page and then go back to RStudio and try pushing again--now it should work.
+
 ### Recommended workflow for saving changes
 
 In general, you should aim to commit and push your changes after each time that you run the tool, i.e. every day or every other day or however often you enter your new data sheets.
