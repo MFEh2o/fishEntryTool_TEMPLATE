@@ -122,7 +122,8 @@ updateFish <- function(headerRows = 18, dbdir, db, funcdir, isdir, ssdir,
       # Get file ----------------------------------------------------------
       # Read in the current file, setting all blank cells to NA
       cur <- read.csv(here(ssdir, file), 
-                      na.strings = c("", " ", "NA"), header = F)
+                      na.strings = c("", " ", "NA"), header = F, 
+                      fileEncoding = "UTF-8-BOM")
       
       # Get header --------------------------------------------------------
       # Pull header info
