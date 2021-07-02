@@ -101,7 +101,20 @@ getCurData <- function(d, hr){
   
   # Pull the data portion of the sample sheet
   curData <- d[(hr + 1):nrow(d),] %>% 
-    setNames(., d[hr,]) %>%
+    setNames(., d[hr,]) 
+  
+  # We're going to remove any extra columns, aka those that now have "NA" as the column name. So let's warn people if there is any data in those columns and make them fix it.
+  if(any(is.na(names(curData)))|any(names(curData == "NA"))){
+    nas <- curData[,is.na(names(curData))|names(curData) == "NA"]
+    flag <- any(!is.na(nas))
+    if(flag){
+      warning("Removing un-named columns in the data portion of the sample sheet, but there is data in these columns! Check to make sure all data is in a named column. All columns without names will be removed.")
+    }
+  }
+
+  # Remove any unnamed/NA columns
+  curData <- curData[, names(curData) != "NA" & !is.na(names(curData))]
+  curData <- curData %>%
     mutate(across(c("fishNum", "fishLength", "fishWeight"), as.numeric))
   
   curData <- curData %>%
@@ -289,7 +302,7 @@ makeFishSamplesNEW <- function(h = header, dss = dateSampleString,
                                value = purrr::reduce(h, c)) %>%
     pivot_wider(names_from = key, values_from = value) %>%
     {if(m){slice(., rep(1:n(), length(trapNumbers))) %>%
-        mutate(siteName = trapNumbers)} else .} %>% # XXX have to introduce periods into the minnow trap names?
+        mutate(siteName = trapNumbers)} else .} %>%
     mutate(siteID = paste(lakeID, siteName, sep = "_"),
            sampleID = paste(siteID, dss, tss,
                             gear, metadataID, sep = "_"),
