@@ -643,7 +643,7 @@ checkClipRecapture <- function(new, db, is, f){
                        across(everything(), as.character)) %>%
                 select(lakeID, otu, clipApply)) %>%
     bind_rows(new %>%
-                filter(!isna(clipApply)) %>%
+                filter(!is.na(clipApply)) %>%
                 mutate(lakeID = word(fishID, 1, 1, sep = "_"),
                        across(everything(), as.character)) %>%
                 select(lakeID, otu, clipApply))
