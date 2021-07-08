@@ -488,7 +488,7 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
     )
   
   # Create a minimal data frame of tags, lakeID's, and species for comparison
-  oldData <- bind_rows(tochar(db), tochar(is)) %>%
+  applyData <- bind_rows(tochar(db), tochar(is), tochar(new)) %>%
     select(fishID, "pit" = pitApply, "floy" = floyApply, otu) %>%
     mutate(lakeID = word(fishID, 1, 1, sep = "_"),
            dateSample = lubridate::ymd(word(fishID, 3, 3, sep = "_"))) %>%
@@ -510,7 +510,7 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
     # Check whether there are any tags where the number matches but not the tag type
     differentTagType <- newData %>%
       select(fishID, tagRecapture, tagRecaptureType) %>%
-      left_join(oldData %>%
+      left_join(applyData %>%
                   select(tagApply, tagApplyType),
                 by = c("tagRecapture" = "tagApply")) %>%
       filter(!is.na(tagRecaptureType), !is.na(tagApplyType), 
@@ -530,22 +530,22 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
       # Annotate each row of the new data
       mutate(problem = case_when(
         # No problem: tag has been applied to the same species in the same lake
-        lakeSpeciesTag %in% oldData$lakeSpeciesTag ~ "none",
+        lakeSpeciesTag %in% applyData$lakeSpeciesTag ~ "none",
         
         # Problem: tag has never been applied before, regardless of species/lake
-        !tagRecapture %in% oldData$tagApply ~ "never applied--wrong number?",
+        !tagRecapture %in% applyData$tagApply ~ "never applied--wrong number?",
         
         # Problem: tag has been applied before, but not in this species or lake
-        (tagRecapture %in% oldData$tagApply) & (!lakeTag %in% oldData$lakeTag) &
-          (!speciesTag %in% oldData$speciesTag) ~ "wrong species, wrong lake",
+        (tagRecapture %in% applyData$tagApply) & (!lakeTag %in% applyData$lakeTag) &
+          (!speciesTag %in% applyData$speciesTag) ~ "wrong species, wrong lake",
         
         # Problem: right lake, wrong species
-        (lakeTag %in% oldData$lakeTag) &
-          (!speciesTag %in% oldData$speciesTag) ~ "right lake, wrong species",
+        (lakeTag %in% applyData$lakeTag) &
+          (!speciesTag %in% applyData$speciesTag) ~ "right lake, wrong species",
         
         # Problem: right species, wrong lake
-        (speciesTag %in% oldData$speciesTag) &
-          (!lakeTag %in% oldData$lakeTag) ~ "right species, wrong lake",
+        (speciesTag %in% applyData$speciesTag) &
+          (!lakeTag %in% applyData$lakeTag) ~ "right species, wrong lake",
         
         # Other: what's going on here?
         TRUE ~ NA_character_)) %>%
@@ -559,7 +559,7 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
     wrongSpeciesWrongLake <- problems %>% 
       filter(problem == "wrong species, wrong lake") %>%
       select(fishID, tagRecapture, tagRecaptureType, otu)
-    original_1 <- oldData %>%
+    original_1 <- applyData %>%
       filter(tagApply %in% wrongSpeciesWrongLake$tagRecapture) %>%
       select('applyOTU' = otu, 'applyLake' = lakeID, tagApply)
     wswl <- left_join(wrongSpeciesWrongLake, original_1, by = c("tagRecapture" = "tagApply"))
@@ -567,7 +567,7 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
     rightLakeWrongSpecies <- problems %>% 
       filter(problem == "right lake, wrong species") %>%
       select(fishID, tagRecapture, tagRecaptureType, otu)
-    original_2 <- oldData %>%
+    original_2 <- applyData %>%
       filter(tagApply %in% rightLakeWrongSpecies$tagRecapture) %>%
       select('applyOTU' = otu, tagApply)
     rlws <- left_join(rightLakeWrongSpecies, original_2, by = c("tagRecapture" = "tagApply"))
@@ -575,7 +575,7 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
     rightSpeciesWrongLake <- problems %>% 
       filter(problem == "right species, wrong lake") %>%
       select(fishID, tagRecapture, tagRecaptureType, lakeID)
-    original_3 <- oldData %>%
+    original_3 <- applyData %>%
       filter(tagApply %in% rightSpeciesWrongLake$tagRecapture) %>%
       select('applyLake' = lakeID, tagApply)
     rswl <- left_join(rightSpeciesWrongLake, original_3, by = c("tagRecapture" = "tagApply"))
