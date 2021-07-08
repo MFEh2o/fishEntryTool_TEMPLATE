@@ -459,7 +459,7 @@ checkTagRecapture <- function(new, db, is, fd, fn, fs, fl){
   assertDataFrame(new, col.names = "unique")
   assertDataFrame(db, col.names = "unique")
   assertDataFrame(is, col.names = "unique")
-  assertSubset(c("fishID", "pitRecapture", "floyRecapture", "otu"), 
+  assertSubset(c("fishID", "pitRecapture", "floyRecapture", "otu", "pitApply", "floyApply"), 
                choices = names(new))
   assertSubset(c("fishID", "pitApply", "floyApply", "otu"), 
                choices = names(db))
@@ -646,7 +646,7 @@ checkClipRecapture <- function(new, db, is, f){
                 filter(!is.na(clipApply)) %>%
                 mutate(lakeID = word(fishID, 1, 1, sep = "_"),
                        across(everything(), as.character)) %>%
-                select(lakeID, otu, clipApply))
+                select(lakeID, otu, clipApply)) %>%
     distinct() %>%
     mutate(combo = paste(lakeID, otu, clipApply, sep = "_"))
   
