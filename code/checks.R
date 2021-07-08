@@ -632,8 +632,8 @@ checkClipRecapture <- function(new, db, is, f){
                choices = names(is))
   assertFlag(f)
   
-  # Get old clip/species/lake apply combos
-  previous <- db %>%
+  # Get old clip/species/lake apply combos, and include any newly-entered clip/species/lake apply combos
+  applies <- db %>%
     filter(!is.na(clipApply)) %>%
     mutate(lakeID = word(fishID, 1, 1, sep = "_")) %>%
     select(lakeID, otu, clipApply)%>%
@@ -642,6 +642,11 @@ checkClipRecapture <- function(new, db, is, f){
                 mutate(lakeID = word(fishID, 1, 1, sep = "_"),
                        across(everything(), as.character)) %>%
                 select(lakeID, otu, clipApply)) %>%
+    bind_rows(new %>%
+                filter(!isna(clipApply)) %>%
+                mutate(lakeID = word(fishID, 1, 1, sep = "_"),
+                       across(everything(), as.character)) %>%
+                select(lakeID, otu, clipApply))
     distinct() %>%
     mutate(combo = paste(lakeID, otu, clipApply, sep = "_"))
   
@@ -656,7 +661,7 @@ checkClipRecapture <- function(new, db, is, f){
   # Check whether any of the recaptures have no precedent (same clip type in this lake/species)
   if(nrow(new) > 0){
     problemRows <- new %>%
-      filter(!combo %in% previous$combo) %>%
+      filter(!combo %in% applies$combo) %>%
       select(fishID, otu, clipRecapture)
     
     if(nrow(problemRows) > 0){
