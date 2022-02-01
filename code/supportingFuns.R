@@ -51,10 +51,8 @@ getHeader <- function(d, hr){
   
   # Apply some formatting and coercion
   header$projectID <- as.numeric(header$projectID)
-  header$dateTimeSet <- format(lubridate::mdy_hm(header$dateTimeSet), 
-                               "%Y-%m-%d %H:%M:%S")
-  header$dateTimeSample <- format(lubridate::mdy_hm(header$dateTimeSample),
-                                  "%Y-%m-%d %H:%M:%S")
+  header$dateTimeSet <- lubridate::ymd_hms(header$dateTimeSet,tz="America/Chicago")
+  header$dateTimeSample <- lubridate::ymd_hms(header$dateTimeSample,tz="America/Chicago")
   header$effort <- as.numeric(header$effort)
   # add dateSet and dateSample
   header$dateSet <- lubridate::date(header$dateTimeSet)
