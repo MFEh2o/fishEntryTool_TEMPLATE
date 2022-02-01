@@ -45,7 +45,7 @@ getHeader <- function(d, hr){
   names(header) <- str_replace(names(header), "UseCPUE", "useCPUE")
   
   # Check date formats (this will allow the date to parse correctly in the next step)
-  pat <- "^[0-9]{1,2}\\/[0-9]{1,2}\\/[0-9]{2,4}\\s[0-9]{1,2}:[0-9]{2}$"
+  pat <- "^[0-9]{4}\\-[0-9]{2}\\-[0-9]{2}\\s[0-9]{2}:[0-9]{2}:[0-9]{2}$"
   assertCharacter(header$dateTimeSet, pattern = pat)
   assertCharacter(header$dateTimeSample, pattern = pat)
   
